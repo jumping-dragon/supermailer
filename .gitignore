@@ -1,3 +1,6 @@
 /target
 .env
 .DS_Store
+/infra/.*
+/infra/terraform.tfstate*
+/.infracost

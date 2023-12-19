@@ -16,6 +16,9 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 axum = "0.6.18"
 dotenvy = "0.15.6"
+lambda_http = "0.8.3"
+lambda_runtime = "0.8.3"
+tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 anyhow = "1.0.66"
 mail-parser = "0.8.2"

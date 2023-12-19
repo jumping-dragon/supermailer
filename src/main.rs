@@ -11,6 +11,7 @@ use mail_parser::Message;
 use serde_json::{json, Value};
 use dotenvy::dotenv;
 use std::{collections::HashMap, fs::File, io::Read, sync::Arc, env};
+use lambda_http::run;
 
 #[derive(Clone, Debug)]
 struct AppState {
@@ -20,12 +21,21 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    dotenv().expect(".env file not found");
+     // required to enable CloudWatch error logging by the runtime
+    tracing_subscriber::fmt()
+     .with_max_level(tracing::Level::INFO)
+     // disable printing the name of the module in every log line.
+     .with_target(false)
+     // disabling time is handy because CloudWatch will add the ingestion time.
+     .without_time()
+     .init();
+
+    // dotenv().expect(".env file not found");
     let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
-    let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
+    // let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
 
     let aws_config = aws_config::from_env()
-        .profile_name(aws_profile_name)
+        // .profile_name(aws_profile_name)
         .load()
         .await;
 
@@ -44,12 +54,14 @@ async fn main() -> Result<(), anyhow::Error> {
         // .route("/roles", get(getRole).post(reconRole))
         .with_state(state);
 
-    println!("Listening on 0.0.0.0:3000");
+    // println!("Listening on 0.0.0.0:3000");
 
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    // axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    //     .serve(app.into_make_service())
+    //     .await
+    //     .unwrap();
+    
+    lambda_http::run(app).await.unwrap();
 
     Ok(())
 }

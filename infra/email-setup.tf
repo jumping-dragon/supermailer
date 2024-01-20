@@ -198,7 +198,6 @@ resource "aws_ses_event_destination" "ses_cloudwatch" {
 
 data "archive_file" "api_server_zip" {                                                                                                                                                                                   
   type        = "zip"                                                                                                                                                                                                
-  # source_dir  = "./test-rust-lambda/target/lambda/test-rust-lambda"                                                                                                                                                                                         
   source_dir  = "../target/lambda/mailer"                                                                                                                                                                                         
   output_path = "./terraform-handler.zip"                                                                                                                                                                         
 } 
@@ -219,7 +218,7 @@ resource "aws_lambda_function" "api_server" {
     variables = {
       # AWS_STS_REGIONAL_ENDPOINTS="regional",
       # TF_LOG="trace"
-      MAIL_BUCKET="alvinjanuar.com-mail-bucket"
+      MAIL_BUCKET="${aws_s3_bucket.mail-bucket.bucket}"
     }
   }
 

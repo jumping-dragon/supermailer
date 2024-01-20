@@ -7,30 +7,31 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use dotenvy::dotenv;
 use mail_parser::Message;
 use serde_json::{json, Value};
-use dotenvy::dotenv;
-use std::{collections::HashMap, fs::File, io::Read, sync::Arc, env};
-use lambda_http::run;
+use std::{env, sync::Arc};
 
 #[derive(Clone, Debug)]
 struct AppState {
     aws_config: SdkConfig,
-    mail_bucket: String
+    mail_bucket: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-     // required to enable CloudWatch error logging by the runtime
+    // required to enable CloudWatch error logging by the runtime
     tracing_subscriber::fmt()
-     .with_max_level(tracing::Level::INFO)
-     // disable printing the name of the module in every log line.
-     .with_target(false)
-     // disabling time is handy because CloudWatch will add the ingestion time.
-     .without_time()
-     .init();
-
-    // dotenv().expect(".env file not found");
+        .with_max_level(tracing::Level::INFO)
+        // disable printing the name of the module in every log line.
+        .with_target(false)
+        // disabling time is handy because CloudWatch will add the ingestion time.
+        .without_time()
+        .init();
+    #[cfg(debug_assertions)]
+    {
+        dotenv().expect(".env file not found");
+    }
     let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
     // let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
 
@@ -39,7 +40,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .load()
         .await;
 
-    let state = Arc::new(AppState { aws_config, mail_bucket });
+    let state = Arc::new(AppState {
+        aws_config,
+        mail_bucket,
+    });
 
     let app = Router::new()
         // .route("/", get(get_email_html))
@@ -54,15 +58,18 @@ async fn main() -> Result<(), anyhow::Error> {
         // .route("/roles", get(getRole).post(reconRole))
         .with_state(state);
 
-    // println!("Listening on 0.0.0.0:3000");
-
-    // axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-    //     .serve(app.into_make_service())
-    //     .await
-    //     .unwrap();
-    
-    lambda_http::run(app).await.unwrap();
-
+    #[cfg(debug_assertions)]
+    {
+        println!("Listening on 0.0.0.0:3000");
+        axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        lambda_http::run(app).await.unwrap();
+    }
     Ok(())
 }
 
@@ -83,10 +90,7 @@ async fn get_email_html(
     State(state): State<Arc<AppState>>,
 ) -> Html<String> {
     let client = s3::Client::new(&state.aws_config);
-    let call = client
-        .get_object()
-        .bucket(&state.mail_bucket)
-        .key(key_id);
+    let call = client.get_object().bucket(&state.mail_bucket).key(key_id);
 
     let response = call.clone().send().await.unwrap();
     let data = response.body.collect().await.expect("error reading data");
@@ -99,9 +103,7 @@ async fn get_email_html(
 
 async fn list_email(State(state): State<Arc<AppState>>) -> Json<Value> {
     let client = s3::Client::new(&state.aws_config);
-    let call = client
-        .list_objects_v2()
-        .bucket(&state.mail_bucket);
+    let call = client.list_objects_v2().bucket(&state.mail_bucket);
 
     let response = call.clone().send().await.unwrap();
     let array = response.contents().unwrap();

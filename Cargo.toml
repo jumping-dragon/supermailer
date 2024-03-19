@@ -1,3 +1,5 @@
+workspace = { members = ["inbox"] }
+
 [package]
 name = "mailer"
 version = "0.1.0"

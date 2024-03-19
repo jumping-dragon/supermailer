@@ -1,0 +1,149 @@
+{
+  "Records": [
+    {
+      "eventSource": "aws:ses",
+      "eventVersion": "1.0",
+      "ses": {
+        "content": null,
+        "mail": {
+          "commonHeaders": {
+            "date": "Tue, 19 Mar 2024 03:34:29 +0800",
+            "from": ["\"Januar, Alvin\" <alvin.januar@teamt5.org>"],
+            "messageId": "<CABPDv24uA0-ek-h1RCK4NQv-=-+NQixDPRFwX4JRqXCiw8P4OQ@mail.gmail.com>",
+            "returnPath": "alvin.januar@teamt5.org",
+            "subject": "test",
+            "to": [
+              "test@alvinjanuar.com",
+              "\"alvinjanuariskai@gmail.com\" <alvinjanuariskai@gmail.com>"
+            ]
+          },
+          "destination": ["test@alvinjanuar.com", "alvinjanuariskai@gmail.com"],
+          "headers": [
+            {
+              "name": "Return-Path",
+              "value": "<alvin.januar@teamt5.org>"
+            },
+            {
+              "name": "Received",
+              "value": "from mail-pg1-f177.google.com (mail-pg1-f177.google.com [209.85.215.177]) by inbound-smtp.us-east-1.amazonaws.com with SMTP id rdutt32evlf2m3p4i1gv10clhpntq0e5ocuat401 for test@alvinjanuar.com; Mon, 18 Mar 2024 19:34:41 +0000 (UTC)"
+            },
+            {
+              "name": "X-SES-Spam-Verdict",
+              "value": "PASS"
+            },
+            {
+              "name": "X-SES-Virus-Verdict",
+              "value": "PASS"
+            },
+            {
+              "name": "Received-SPF",
+              "value": "pass (spfCheck: domain of teamt5.org designates 209.85.215.177 as permitted sender) client-ip=209.85.215.177; envelope-from=alvin.januar@teamt5.org; helo=mail-pg1-f177.google.com;"
+            },
+            {
+              "name": "Authentication-Results",
+              "value": "amazonses.com; spf=pass (spfCheck: domain of teamt5.org designates 209.85.215.177 as permitted sender) client-ip=209.85.215.177; envelope-from=alvin.januar@teamt5.org; helo=mail-pg1-f177.google.com; dkim=pass header.i=@teamt5.org; dmarc=pass header.from=teamt5.org;"
+            },
+            {
+              "name": "X-SES-RECEIPT",
+              "value": "AEFBQUFBQUFBQUFISmRjdnZMeEJWcS93LzJNRW5EL2FQbGZzWjI3T3FsRzlXSDJHNENCWTZVZXhEeTIxWE82Sm0xN2IybXE0eTNINFJUOHRKWHRhWFVmWnZERXNkcmhCRVFjRlRTUDFNR0NUSGZTQkxVSlBqSHgwT1QreldhWG83b0V0eUlpQUpLVFdaZ3VaWHBjNUppbDFRV3hQc0dxbHhsTEVPdUZ2UzRydEdmaU9nVjcxekhia29mTkxhaGR5WEduVUtmNE85WTk3WFhrM0c1MkVOb01xWXg0VU1PblZMU0lPK1phdkZEaTF0OHF4bExmaHJrM2JsbVRnakZtUWZScW9kbkpnbFhaQVMycG5JZngwSDJiMlpLNHRWVVRqUGdSMUlTSnUrZWZaWmtCV1J2em13Z1E9PQ=="
+            },
+            {
+              "name": "X-SES-DKIM-SIGNATURE",
+              "value": "a=rsa-sha256; q=dns/txt; b=o0gybDuy7S35nFWQk65fbolrAGpvtfEPg1AD8bmdFYbi+93subcErkBzVtoWPge2U3py01BcbuWB/8IFXo+pDkb5JdDgWLiJBZ7eaq5DQXyiiuxVGK3A67SuVLq0oEtHB6fCpeqB14N/NSBBNmOPMf0gc92DyWqsITb/PMkRpYc=; c=relaxed/simple; s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug; d=amazonses.com; t=1710790482; v=1; bh=49VfRQH0PTSpe9L5JASqRIR2PImpQe5MUzRCgxO3pmI=; h=From:To:Cc:Bcc:Subject:Date:Message-ID:MIME-Version:Content-Type:X-SES-RECEIPT;"
+            },
+            {
+              "name": "Received",
+              "value": "by mail-pg1-f177.google.com with SMTP id 41be03b00d2f7-5d4d15ec7c5so3715032a12.1 for <test@alvinjanuar.com>; Mon, 18 Mar 2024 12:34:41 -0700 (PDT)"
+            },
+            {
+              "name": "DKIM-Signature",
+              "value": "v=1; a=rsa-sha256; c=relaxed/relaxed; d=teamt5.org; s=google; t=1710790480; x=1711395280; darn=alvinjanuar.com; h=to:subject:message-id:date:from:mime-version:from:to:cc:subject:date:message-id:reply-to; bh=49VfRQH0PTSpe9L5JASqRIR2PImpQe5MUzRCgxO3pmI=; b=GDNL3y03dvbZmnGMv7jThYTOKKi9uGgw4Y4f/IgvXsbiS/PHqGDveKUd5OBXDPvOzgN+75EX7+JLCZltxunGovqd3GeM3K/LITo0L75YkNjKWb2MbzNMdKOWk4ozuUl0ALnG9bCFEaNkrH+R3U7vvQU8zgzrxXVSU0jJakef+GFdf49DwPmwQom77GSgO40dAJzNJ/g/RWr3vkphyT5DZ26294GoPpALOrXKCKspSrSsLK0RffcVybnNP7SAoOA4/G4YfUDzZ9nETsJPeaK8XXjjNUP+qPX4x0IgsyejFNJn/vX/I+KxHw0Z0S2cOrr2R6z/I33uf6RwB8tE81n4Jg=="
+            },
+            {
+              "name": "X-Google-DKIM-Signature",
+              "value": "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20230601; t=1710790480; x=1711395280; h=to:subject:message-id:date:from:mime-version:x-gm-message-state :from:to:cc:subject:date:message-id:reply-to; bh=49VfRQH0PTSpe9L5JASqRIR2PImpQe5MUzRCgxO3pmI=; b=paQFtvbrtpfXhdi0fXJtDFP/rLfPYtREDhQauj8c2iDp2hLu7YmJi0xTEIBg5N3b9D ssST2cylFdmzEGOWSU1rRMiVelTf2qvo80hKJd4MTKC2z9ZmaE/GCgiYgS/lSBJqOIV5 /erv05bJSbjFXnpnPg+qD6lSFvvsctxuF3/Ru+4kb1JU2HgadEIWXT3ueaLdXSDHh1q4 JvD3Qt3YPsZOeknPOBn0WWCkmXrd8RnxRbGGQL/LiTEj5uiFiJrdVolffCygrH/1MA9x ee+KyDwfe22nDVkrWj6mIveh1kosHTxsE4qW6gxVvCVEoYDlLReK4vVioCvczYzrVTLt t9Kw=="
+            },
+            {
+              "name": "X-Gm-Message-State",
+              "value": "AOJu0YyLoIAugxCTY/wG7E0T9UY5eGGVEsBe+LnDKTx6jJrqCCdpDkWu wkHk7top31RXnryKXNDlPc5m4dL3WPHxw7d48Wba3z3i9K49hR0tToKL1e169hw0oHyYP2HLIbw pXOQrCcuQGqcf058AJKNsias4eOqDZJX9V1Z6CcokpLVcD/Jy"
+            },
+            {
+              "name": "X-Google-Smtp-Source",
+              "value": "AGHT+IHv8ZLi846PHr+LPz3YsWu32UP3KF4/wBbmEEAgaC6qQrdPEuMHt5kHEWl+n2tA8dRDoYbmd9E2uV+BWzMc+PY="
+            },
+            {
+              "name": "X-Received",
+              "value": "by 2002:a17:90a:3481:b0:29d:d93a:d6e7 with SMTP id p1-20020a17090a348100b0029dd93ad6e7mr646611pjb.26.1710790480174; Mon, 18 Mar 2024 12:34:40 -0700 (PDT)"
+            },
+            {
+              "name": "MIME-Version",
+              "value": "1.0"
+            },
+            {
+              "name": "From",
+              "value": "\"Januar, Alvin\" <alvin.januar@teamt5.org>"
+            },
+            {
+              "name": "Date",
+              "value": "Tue, 19 Mar 2024 03:34:29 +0800"
+            },
+            {
+              "name": "Message-ID",
+              "value": "<CABPDv24uA0-ek-h1RCK4NQv-=-+NQixDPRFwX4JRqXCiw8P4OQ@mail.gmail.com>"
+            },
+            {
+              "name": "Subject",
+              "value": "test"
+            },
+            {
+              "name": "To",
+              "value": "test@alvinjanuar.com,  \"alvinjanuariskai@gmail.com\" <alvinjanuariskai@gmail.com>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/mixed; boundary=\"000000000000db60260613f47253\""
+            }
+          ],
+          "headersTruncated": false,
+          "messageId": "rdutt32evlf2m3p4i1gv10clhpntq0e5ocuat401",
+          "source": "alvin.januar@teamt5.org",
+          "timestamp": "2024-03-18T19:34:41.594Z"
+        },
+        "receipt": {
+          "action": {
+            "bucketName": null,
+            "functionArn": "arn:aws:lambda:us-east-1:189428941640:function:receiver_lambda",
+            "invocationType": "Event",
+            "message": null,
+            "objectKey": null,
+            "organizationArn": null,
+            "sender": null,
+            "smtpReplyCode": null,
+            "statusCode": null,
+            "topicArn": null,
+            "type": "Lambda"
+          },
+          "dkimVerdict": {
+            "status": "PASS"
+          },
+          "dmarcPolicy": null,
+          "dmarcVerdict": {
+            "status": "PASS"
+          },
+          "processingTimeMillis": 1095,
+          "recipients": ["test@alvinjanuar.com"],
+          "spamVerdict": {
+            "status": "PASS"
+          },
+          "spfVerdict": {
+            "status": "PASS"
+          },
+          "timestamp": "2024-03-18T19:34:41.594Z",
+          "virusVerdict": {
+            "status": "PASS"
+          }
+        }
+      }
+    }
+  ]
+}

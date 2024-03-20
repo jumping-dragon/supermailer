@@ -9,6 +9,7 @@
           "ec2:*",
           "s3:*",
           "sts:*",
+          "dynamodb:*",
           "elasticfilesystem:ClientRootAccess",
           "elasticfilesystem:ClientWrite",
           "elasticfilesystem:ClientMount"

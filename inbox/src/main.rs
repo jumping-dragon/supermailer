@@ -3,10 +3,11 @@ use aws_lambda_events::ses::{SimpleEmailEvent, SimpleEmailMessage, SimpleEmailSe
 use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::Client;
 use futures::future::try_join_all;
-use lambda_runtime::{Context, Error, LambdaEvent};
+use lambda_runtime::{Context, Error, LambdaEvent, service_fn};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use std::{fs::File, io::BufReader};
+use std::{collections::HashMap, fs::File, io::BufReader};
 
 fn get_pk(input: SimpleEmailService) -> String {
     let recipient = &input.receipt.recipients[0];
@@ -37,14 +38,14 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
         .await;
 
     match calls {
-        Ok(result) => println!("Added mail {:?}", result),
-        Err(error) => println!("Error adding mail {:?}", error),
+        Err(error) => println!("Error: {:?}", error),
+        Ok(_) => println!("LMD OK!"),
     }
 
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Mail {
     pk: String,
     sk: SimpleEmailMessage,
@@ -55,37 +56,38 @@ async fn add_item(
     client: &Client,
     item: &Mail,
     table: &String,
-) -> Result<AttributeValue, aws_sdk_dynamodb::Error> {
+) -> Result<String, aws_sdk_dynamodb::Error> {
     let Mail { pk, sk } = item;
     let pk = AttributeValue::S(pk.to_string());
-    let sk = AttributeValue::S(json!(sk).to_string());
+    // let sk = AttributeValue::S(json!(sk).to_string());
+    let sk = AttributeValue::M(serde_dynamo::to_item(sk).unwrap());
 
     let request = client
         .put_item()
         .table_name(table)
-        .item("PK", pk)
+        .item("PK", pk.clone())
         .item("SK", sk)
-        .return_values(aws_sdk_dynamodb::types::ReturnValue::AllOld);
+        .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
 
-    println!("Executing request [{request:#?}] to add item...");
+    // println!("Executing request [{request:#?}] to add item...");
 
     let resp = request.send().await?;
 
-    println!("Resp [{resp:#?}]");
+    // println!("Resp [{resp:#?}]");
 
-    let attributes = resp.attributes().unwrap();
+    let consumed_capacity = resp.consumed_capacity().unwrap();
 
-    let pk = attributes.get("PK").cloned().unwrap();
-    let sk = attributes.get("SK").cloned().unwrap();
+    let capacity_units = consumed_capacity.capacity_units.unwrap();
 
-    println!("Added mail {:?}, {:?}", pk, sk);
+    println!("Added mail {:?}, used {:?} capacity_units", item.pk.clone(), capacity_units);
 
-    Ok(pk)
+    Ok(item.pk.clone())
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    // lambda_runtime::run(service_fn(handler)).await
+    #[cfg(debug_assertions)]
+    {
     let file = File::open("input_ses.json").unwrap();
     let reader = BufReader::new(file);
     let payload: SimpleEmailEvent =
@@ -95,4 +97,9 @@ async fn main() -> Result<(), Error> {
         context: Context::default(),
     };
     handler(event).await
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        lambda_runtime::run(service_fn(handler)).await
+    }
 }

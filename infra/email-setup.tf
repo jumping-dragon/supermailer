@@ -1,4 +1,9 @@
 terraform {
+  backend "s3" {
+    bucket = "alvinjanuar.com-stacks"
+    key = "prod/supermailer/terraform.tfstate"
+    region = "us-east-1"
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"

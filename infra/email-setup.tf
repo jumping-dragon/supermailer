@@ -7,7 +7,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.28.0"
+      version = "~> 5.0"
     }
   }
 }
@@ -293,7 +293,7 @@ resource "aws_lambda_function" "inbox_lambda" {
   reserved_concurrent_executions = "-1"
   role                           = aws_iam_role.api_server_role.arn
   depends_on                     = [aws_iam_role_policy_attachment.api_server_policy_role_attachment]
-  runtime                        = "provided.al2"
+  runtime                        = "provided.al2023"
   source_code_hash               = data.archive_file.inbox_lambda_zip.output_base64sha256
   filename                       = data.archive_file.inbox_lambda_zip.output_path 
   timeout                        = "120"

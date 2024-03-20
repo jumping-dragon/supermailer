@@ -85,18 +85,25 @@ async fn add_item(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Error> {    // required to enable CloudWatch error logging by the runtime
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        // disable printing the name of the module in every log line.
+        .with_target(false)
+        // disabling time is handy because CloudWatch will add the ingestion time.
+        .without_time()
+        .init();
     #[cfg(debug_assertions)]
     {
-    let file = File::open("input_ses.json").unwrap();
-    let reader = BufReader::new(file);
-    let payload: SimpleEmailEvent =
-        serde_json::from_reader(reader).expect("JSON was not well-formatted");
-    let event: LambdaEvent<SimpleEmailEvent> = LambdaEvent {
-        payload,
-        context: Context::default(),
-    };
-    handler(event).await
+        let file = File::open("input_ses.json").unwrap();
+        let reader = BufReader::new(file);
+        let payload: SimpleEmailEvent =
+            serde_json::from_reader(reader).expect("JSON was not well-formatted");
+        let event: LambdaEvent<SimpleEmailEvent> = LambdaEvent {
+            payload,
+            context: Context::default(),
+        };
+        handler(event).await
     }
     #[cfg(not(debug_assertions))]
     {

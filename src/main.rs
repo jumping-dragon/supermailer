@@ -1,5 +1,5 @@
 use anyhow::Result;
-use aws_config::SdkConfig;
+use aws_config::{BehaviorVersion, SdkConfig};
 use aws_sdk_s3 as s3;
 use axum::{
     extract::{Path, State},
@@ -35,7 +35,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
     // let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
 
-    let aws_config = aws_config::from_env()
+    let aws_config = aws_config::defaults(BehaviorVersion::v2023_11_09())
         // .profile_name(aws_profile_name)
         .load()
         .await;
@@ -106,7 +106,7 @@ async fn list_email(State(state): State<Arc<AppState>>) -> Json<Value> {
     let call = client.list_objects_v2().bucket(&state.mail_bucket);
 
     let response = call.clone().send().await.unwrap();
-    let array = response.contents().unwrap();
+    let array = response.contents();
     let parsed: Vec<String> = array.iter().map(|x| x.key.clone().unwrap()).collect();
     println!("{:#?}", parsed);
     // let json = serde_json::to_string({}).unwrap();

@@ -2408,6 +2408,7 @@ dependencies = [
  "anyhow",
  "aws-config",
  "aws-sdk-config",
+ "aws-sdk-dynamodb",
  "aws-sdk-s3",
  "axum",
  "dotenvy",

@@ -227,7 +227,7 @@ resource "aws_lambda_function" "api_server" {
   reserved_concurrent_executions = "-1"
   role                           = aws_iam_role.api_server_role.arn
   depends_on                     = [aws_iam_role_policy_attachment.api_server_policy_role_attachment]
-  runtime                        = "provided.al2"
+  runtime                        = "provided.al2023"
   source_code_hash               = data.archive_file.api_server_zip.output_base64sha256  
   filename                       = data.archive_file.api_server_zip.output_path 
   timeout                        = "120"
@@ -236,6 +236,7 @@ resource "aws_lambda_function" "api_server" {
       # AWS_STS_REGIONAL_ENDPOINTS="regional",
       # TF_LOG="trace"
       MAIL_BUCKET="${aws_s3_bucket.mail-bucket.bucket}"
+      MAIL_DB="${aws_dynamodb_table.example.name}"
     }
   }
 
@@ -336,13 +337,19 @@ resource "aws_lambda_function_event_invoke_config" "lambda_to_ses_topic" {
 
 resource "aws_dynamodb_table" "example" {
   name             = "SupermailerTable"
-  hash_key         = "PK"
+  hash_key         = "pk"
+  range_key        = "sk"
   billing_mode     = "PAY_PER_REQUEST"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
-    name = "PK"
+    name = "pk"
     type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "N"
   }
 }

@@ -3,17 +3,23 @@ use aws_lambda_events::ses::{SimpleEmailEvent, SimpleEmailMessage, SimpleEmailSe
 use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::Client;
 use futures::future::try_join_all;
-use lambda_runtime::{Context, Error, LambdaEvent, service_fn};
+use lambda_runtime::{service_fn, Context, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
-use std::{collections::HashMap, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 
-fn get_pk(input: SimpleEmailService) -> String {
-    let recipient = &input.receipt.recipients[0];
-    let timestamp = &input.mail.timestamp;
+fn get_params(input: SimpleEmailService) -> (String, i64, String, String) {
+    let pk = &input.receipt.recipients[0];
+    let sk = &input.mail.timestamp.timestamp();
     let message_id = &input.mail.message_id.unwrap();
-    format!("{recipient}#{timestamp}#{message_id}")
+    let subject = &input.mail.common_headers.subject.unwrap();
+    // format!("{pk}#{timestamp}#{message_id}")
+    (
+        pk.to_string(),
+        *sk,
+        message_id.to_string(),
+        subject.to_string(),
+    )
 }
 
 async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
@@ -28,14 +34,19 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
     let records: Vec<Mail> = payload
         .records
         .iter()
-        .map(|x| Mail {
-            pk: get_pk(x.ses.clone()),
-            sk: x.ses.mail.clone(),
+        .map(|x| {
+            let (pk, sk, message_id, subject) = get_params(x.ses.clone());
+            Mail {
+                pk,
+                sk,
+                message_id,
+                subject,
+                raw: Some(x.ses.mail.clone()),
+            }
         })
         .collect();
 
-    let calls = try_join_all(records.iter().map(|x| add_item(&client, &x, &table)))
-        .await;
+    let calls = try_join_all(records.iter().map(|x| add_item(&client, &x, &table))).await;
 
     match calls {
         Err(error) => println!("Error: {:?}", error),
@@ -46,9 +57,12 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Mail {
+pub struct Mail {
     pk: String,
-    sk: SimpleEmailMessage,
+    sk: i64,
+    message_id: String,
+    subject: String,
+    raw: Option<SimpleEmailMessage>,
 }
 
 // TODO: Error handling
@@ -57,16 +71,27 @@ async fn add_item(
     item: &Mail,
     table: &String,
 ) -> Result<String, aws_sdk_dynamodb::Error> {
-    let Mail { pk, sk } = item;
+    let Mail {
+        pk,
+        raw,
+        sk,
+        message_id,
+        subject,
+    } = item;
     let pk = AttributeValue::S(pk.to_string());
-    // let sk = AttributeValue::S(json!(sk).to_string());
-    let sk = AttributeValue::M(serde_dynamo::to_item(sk).unwrap());
+    let raw = AttributeValue::M(serde_dynamo::to_item(raw).unwrap());
+    let sk = AttributeValue::N(sk.to_string());
+    let message_id = AttributeValue::S(message_id.to_string());
+    let subject = AttributeValue::S(subject.to_string());
 
     let request = client
         .put_item()
         .table_name(table)
-        .item("PK", pk.clone())
-        .item("SK", sk)
+        .item("pk", pk.clone())
+        .item("raw", raw)
+        .item("sk", sk)
+        .item("message_id", message_id)
+        .item("subject", subject)
         .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
 
     // println!("Executing request [{request:#?}] to add item...");
@@ -79,13 +104,20 @@ async fn add_item(
 
     let capacity_units = consumed_capacity.capacity_units.unwrap();
 
-    println!("Added mail {:?}, used {:?} capacity_units", item.pk.clone(), capacity_units);
+    println!(
+        "Added mail {:?} at {:?} w/ key: {:?}, used {:?} capacity_units",
+        item.pk.clone(),
+        item.sk.clone(),
+        item.message_id.clone(),
+        capacity_units
+    );
 
     Ok(item.pk.clone())
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {    // required to enable CloudWatch error logging by the runtime
+async fn main() -> Result<(), Error> {
+    // required to enable CloudWatch error logging by the runtime
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         // disable printing the name of the module in every log line.

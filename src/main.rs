@@ -66,7 +66,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     #[cfg(debug_assertions)]
     {
-        println!("Listening on 0.0.0.0:3001");
+        println!("Listening on http://localhost:3001");
         axum::Server::bind(&"0.0.0.0:3001".parse().unwrap())
             .serve(app.into_make_service())
             .await
@@ -113,6 +113,7 @@ pub struct Mail {
     sk: i64,
     message_id: String,
     subject: String,
+    from: Vec<String>,
 }
 
 async fn list_email(State(state): State<Arc<AppState>>) -> Json<Value> {
@@ -129,12 +130,12 @@ async fn list_email(State(state): State<Arc<AppState>>) -> Json<Value> {
         .query()
         .table_name(&state.mail_db)
         .key_condition_expression("pk = :pk")
-        .projection_expression("pk, message_id, sk, subject")
-        .expression_attribute_values(
-            ":pk",
-            AttributeValue::S("web@alvinjanuar.com".to_string()),
-        )
-        .limit(3);
+        .projection_expression("pk, message_id, sk, subject, #r.#ch.#f")
+        .expression_attribute_names("#r", "raw")
+        .expression_attribute_names("#ch", "commonHeaders")
+        .expression_attribute_names("#f", "from")
+        .expression_attribute_values(":pk", AttributeValue::S("web@alvinjanuar.com".to_string()))
+        .limit(20);
 
     let resp = call.send().await.unwrap();
     let mails: Vec<Mail> = resp
@@ -142,15 +143,26 @@ async fn list_email(State(state): State<Arc<AppState>>) -> Json<Value> {
         .iter()
         .map(|x| Mail {
             pk: x.get("pk").unwrap().as_s().unwrap().to_string(),
-            sk: x
-                .get("sk")
-                .unwrap()
-                .as_n()
-                .unwrap()
-                .parse::<i64>()
-                .unwrap(),
+            sk: x.get("sk").unwrap().as_n().unwrap().parse::<i64>().unwrap(),
             message_id: x.get("message_id").unwrap().as_s().unwrap().to_string(),
             subject: x.get("subject").unwrap().as_s().unwrap().to_string(),
+            from: x
+                .get("raw")
+                .unwrap()
+                .as_m()
+                .unwrap()
+                .get("commonHeaders")
+                .unwrap()
+                .as_m()
+                .unwrap()
+                .get("from")
+                .unwrap()
+                .as_l()
+                .unwrap()
+                .to_owned()
+                .iter()
+                .map(|x| x.as_s().unwrap().to_owned())
+                .collect::<Vec<String>>(),
         })
         .collect();
     Json(json!({ "data": mails }))

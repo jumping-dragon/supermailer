@@ -5,23 +5,144 @@ name = "supermailer"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+axum = { version = "0.6.20", optional = true }
+console_error_panic_hook = "0.1"
+console_log = "1"
+cfg-if = "1"
+leptos = { version = "0.5.4", features = ["nightly"] }
+leptos_axum = { version = "0.5.4", optional = true }
+leptos_meta = { version = "0.5.4", features = ["nightly"] }
+leptos_router = { version = "0.5.4", features = ["nightly"] }
+log = "0.4"
+simple_logger = "4"
+tokio = { version = "1.25.0", optional = true }
+tower = { version = "0.4.13", optional = true }
+tower-http = { version = "0.4", features = ["fs"], optional = true }
+wasm-bindgen = "=0.2.92"
+thiserror = "1.0.38"
+tracing = { version = "0.1.37", optional = true }
+http = "0.2.8"
+axum-aws-lambda = { version = "0.5.0", optional = true }
+lambda_http = { version = "0.8", optional = true }
+serde_json = { version = "1", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+dotenvy = { version = "0.15.6", optional = true }
+aws-config = { version = "1.1.8", optional = true }
+aws-sdk-config = { version = "0.25.1", optional = true }
+aws-sdk-s3 = { version = "1.20.0", optional = true }
+aws-sdk-dynamodb = { version = "1.18.0", optional = true }
+mail-parser = { version = "0.8.2", optional = true }
 
-aws-config = "1.1.8"
-aws-sdk-config = "0.25.1"
-aws-sdk-s3 = "1.20.0"
-aws-sdk-dynamodb = "1.18.0"
-serde_json = "1"
-urlencoding = "2.1.2"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-axum = "0.6.18"
-dotenvy = "0.15.6"
-lambda_http = "0.8.3"
-lambda_runtime = "0.8.3"
-tracing = { version = "0.1", features = ["log"] }
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-anyhow = "1.0.66"
-mail-parser = "0.8.2"
+[features]
+hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+ssr = [
+  "dep:axum",
+  "dep:tokio",
+  "dep:tower",
+  "dep:tower-http",
+  "dep:leptos_axum",
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "dep:tracing",
+  "dep:axum-aws-lambda",
+  "dep:serde_json",
+  "dep:serde",
+  "dep:dotenvy",
+  "dep:aws-config",
+  "dep:aws-sdk-config",
+  "dep:aws-sdk-s3",
+  "dep:aws-sdk-dynamodb",
+  "dep:mail-parser",
+]
+
+# Defines a size-optimized profile for the WASM bundle in release mode
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# These dev profiles smooth development without the --release flag
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 'z'
+
+[profile.server-dev]
+inherits = "dev"
+opt-level = 2
+
+# cargo-lambda allows certain settings to be defined here,
+# see https://www.cargo-lambda.info/commands/deploy.html#deploy-configuration-in-cargo-s-metadata
+[package.metadata.lambda.deploy]
+# Leptos generally doesn't take more than a few hundred milliseconds even with a cold start
+timeout = 3
+env = { LEPTOS_ENV = "PROD", LEPTOS_OUTPUT_NAME = "supermailer", LEPTOS_SITE_ROOT = "target/site", LEPTOS_SITE_PKG_DIR = "pkg" }
+
+[package.metadata.leptos]
+# Since we'll be testing without --release, we'll set up a dev profile to allow some optimization
+bin-profile-dev = "server-dev"
+lib-profile-dev = "wasm-dev"
+
+# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
+output-name = "supermailer"
+
+# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
+site-root = "target/site"
+
+# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
+# Defaults to pkg
+site-pkg-dir = "pkg"
+
+# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
+style-file = "main.scss"
+# Assets source dir. All files found here will be copied and synchronized to site-root.
+# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
+#
+# Optional. Env: LEPTOS_ASSETS_DIR.
+assets-dir = "public"
+
+# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
+site-addr = "127.0.0.1:3000"
+
+# The port to use for automatic reload monitoring
+reload-port = 3001
+
+#  The browserlist query used for optimizing the CSS.
+browserquery = "defaults"
+
+# Set by cargo-leptos watch when building with that tool. Controls whether autoreload JS will be included in the head
+watch = false
+
+# The environment Leptos will run in, usually either "DEV" or "PROD"
+env = "DEV"
+
+# The features to use when compiling the bin target
+#
+# Optional. Can be over-ridden with the command line parameter --bin-features
+bin-features = ["ssr"]
+
+# If the --no-default-features flag should be used when compiling the bin target
+#
+# Optional. Defaults to false.
+bin-default-features = false
+
+# The features to use when compiling the lib target
+#
+# Optional. Can be over-ridden with the command line parameter --lib-features
+lib-features = ["hydrate"]
+
+# If the --no-default-features flag should be used when compiling the lib target
+#
+# Optional. Defaults to false.
+lib-default-features = false
+
+# The profile to use for the lib target when compiling for release
+#
+# Optional. Defaults to "release".
+lib-profile-release = "wasm-release"

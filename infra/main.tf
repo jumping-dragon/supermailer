@@ -30,6 +30,20 @@ variable "domain" {
   default = "alvinjanuar.com"
 }
 
+locals {
+  domain_name = [
+    "courriel.alvinjanuar.com"
+  ]
+}
+
+data "aws_route53_zone" "zone" {
+  name         = "alvinjanuar.com"
+  private_zone = false
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 # ses spf
 resource "aws_route53_record" "spf-record" {
     zone_id = "${var.zone_id}"

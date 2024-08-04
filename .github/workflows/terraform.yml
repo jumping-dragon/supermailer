@@ -3,7 +3,6 @@ name: 'Terraform'
 on:
   push:
     branches: [ "main" ]
-  pull_request:
 
 permissions:
   id-token: write
@@ -38,9 +37,11 @@ jobs:
       uses: hashicorp/setup-terraform@v2
 
     - name: Setup Rust Toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: stable
+        toolchain: nightly
+        targets: "wasm32-unknown-unknown"
+        components: "rustfmt"
 
     - name: Setup Cargo Binstall
       uses: cargo-bins/cargo-binstall@main
@@ -48,12 +49,28 @@ jobs:
     - name: Setup Zig
       uses: goto-bus-stop/setup-zig@v2
 
+    # Setup Nodejs
+    - name: Use Node v20
+      uses: actions/setup-node@v1
+      with:
+        node-version: 20
+
+    # Install & Build repo
+    - name: Use Bun to install and build
+      uses: oven-sh/setup-bun@v1
+    - run: bun install
+
     - name: Setup Cargo Lambda
       run: cargo binstall cargo-lambda -y
+
+    - name: Setup Cargo Leptos
+      run: cargo install --locked cargo-leptos
     
     # Build with Cargo Lambda
     - name: Build
-      run: cargo lambda build --release --arm64 --all
+      run: |
+        cargo leptos build --release
+        LEPTOS_OUTPUT_NAME=supermailer cargo lambda build --release --features=ssr --no-default-features --arm64 --all
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init

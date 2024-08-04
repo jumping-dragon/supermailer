@@ -48,6 +48,17 @@ jobs:
     - name: Setup Zig
       uses: goto-bus-stop/setup-zig@v2
 
+    # Setup Nodejs
+    - name: Use Node v20
+      uses: actions/setup-node@v1
+      with:
+        node-version: 20
+
+    # Install & Build repo
+    - name: Use Bun to install and build
+      uses: oven-sh/setup-bun@v1
+    - run: bun install
+
     - name: Setup Cargo Lambda
       run: cargo binstall cargo-lambda -y
     

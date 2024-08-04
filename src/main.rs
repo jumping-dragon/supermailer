@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+use supermailer::api;
 // boilerplate to run in different modes
 cfg_if! {
     if #[cfg(feature = "ssr")] {
@@ -13,10 +14,11 @@ cfg_if! {
         };
         use dotenvy::dotenv;
         use leptos::*;
-        use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
+        use leptos_axum::{generate_route_list_with_exclusions, handle_server_fns_with_context, LeptosRoutes};
         use std::env;
         use supermailer::state::{AppState, MailConfig};
         use supermailer::{app::*, fileserv::file_and_error_handler};
+        use api::{list_email, get_email_html};
 
         async fn server_fn_handler(
             State(app_state): State<AppState>,
@@ -78,7 +80,7 @@ cfg_if! {
             // We don't use an address for the lambda function
             #[allow(unused_variables)]
             let addr = leptos_options.site_addr;
-            let routes = generate_route_list(App);
+            let routes = generate_route_list_with_exclusions(App, Some(vec!["/api/".to_string(), "/api".to_string()]));
 
             let mail_config = MailConfig {
                 mail_bucket,
@@ -92,9 +94,15 @@ cfg_if! {
                 routes: routes.clone(),
             };
 
+            let api_route = Router::new()
+                .route("/", get(list_email))
+                .route("/email/:id", get(get_email_html))
+                .with_state(state.clone());
+
             // build our application with a route
             let app = Router::new()
-                .route("/api/*fn_name", get(server_fn_handler).post(server_fn_handler))
+                .nest("/api", api_route)
+                .route("/api_fn/*fn_name", get(server_fn_handler).post(server_fn_handler))
                 .leptos_routes_with_handler(routes, get(leptos_routes_handler))
                 .fallback(file_and_error_handler)
                 .with_state(state);

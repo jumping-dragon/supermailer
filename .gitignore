@@ -4,3 +4,4 @@
 /infra/.*
 /infra/terraform.tfstate*
 /.infracost
+/node_modules

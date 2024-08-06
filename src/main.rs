@@ -55,7 +55,7 @@ cfg_if! {
 
         #[tokio::main]
         async fn main() {
-            simple_logger::init_with_level(log::Level::Debug).expect("couldn't initialize logging");
+            simple_logger::init_with_level(log::Level::Info).expect("couldn't initialize logging");
 
             #[cfg(debug_assertions)]
             {

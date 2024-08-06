@@ -37,7 +37,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "CDN for courriel.alvinjanuar.com"
-  default_root_object = "index.html"
+  # default_root_object = "index.html"
 
   logging_config {
     include_cookies = false
@@ -125,9 +125,9 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = aws_lambda_function_url.function_url.id
 
-    cache_policy_id = aws_cloudfront_cache_policy.s3_cache_policy.id
-    origin_request_policy_id = aws_cloudfront_origin_request_policy.s3_origin_request_policy.id
-    response_headers_policy_id = aws_cloudfront_response_headers_policy.s3_response_header_policy.id
+    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" #Managed-CachingDisabled
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" #Managed-AllViewerExceptHostHeader
+    response_headers_policy_id = "eaab4381-ed33-4a86-88ca-d9558dc6cd63" #Managed-CORS-with-preflight-and-SecurityHeadersPolicy
 
     min_ttl                = 0
     default_ttl            = 86400

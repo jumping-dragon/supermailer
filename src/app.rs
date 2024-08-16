@@ -34,15 +34,23 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
+    let (count, set_count) = create_signal(0.00);
+    let on_click = move |_| set_count.update(|count| *count += 1.00);
 
     view! {
         <div class="bg-gray-800">
-            <ProgressNav />
+            <ProgressNav progress=count />
             <div class="text-white flex flex-col justify-center items-center min-h-screen">
                 <h1>"Welcome to Leptos!"</h1>
                 <button on:click=on_click>"Click Me: " {count}</button>
+                <input
+                    type="range"
+                    max="100"
+                    value=count
+                    on:change=move |event| {
+                        set_count(event_target_value(&event).parse::<f64>().unwrap());
+                    }
+                />
                 <Home />
             </div>
         </div>
@@ -81,10 +89,14 @@ fn Home() -> impl IntoView {
 }
 
 #[component]
-fn ProgressNav() -> impl IntoView {
+fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
+    let percentage = move || progress() / 100.0;
     view! {
         <div class="fixed top-0 right-0 left-0 h-0.5 bg-white">
-            <div class="bg-gray-900 h-0.5 w-1/3" />
+            <div
+                class="bg-gray-900 h-0.5 w-full origin-left transition-all"
+                style:transform=move || format!("scaleX({})", percentage())
+            />
         </div>
     }
 }

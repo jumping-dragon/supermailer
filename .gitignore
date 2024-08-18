@@ -2,6 +2,7 @@
 .env
 .DS_Store
 /infra/.*
+/infra/*.zip
 /infra/terraform.tfstate*
 /.infracost
 /node_modules

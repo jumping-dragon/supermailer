@@ -92,9 +92,9 @@ fn Home() -> impl IntoView {
 fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
     let percentage = move || progress() / 100.0;
     view! {
-        <div class="fixed top-0 right-0 left-0 h-0.5 bg-white">
+        <div class="fixed top-0 right-0 left-0 h-0.5">
             <div
-                class="bg-gray-900 h-0.5 w-full origin-left transition-all"
+                class="bg-rainbow h-0.5 w-full origin-left transition-all"
                 style:transform=move || format!("scaleX({})", percentage())
             />
         </div>

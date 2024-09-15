@@ -1,3 +1,4 @@
+use crate::state::AppState;
 use aws_sdk_dynamodb as dynamodb;
 use aws_sdk_s3 as s3;
 use axum::{
@@ -9,13 +10,12 @@ use dynamodb::types::AttributeValue;
 use mail_parser::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::state::AppState;
 // use leptos::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Test {
     mail_db: String,
-    id: String
+    id: String,
 }
 
 // #[server(GetEmailHtml, "/api_fn", "GetJson", "email")]
@@ -42,7 +42,10 @@ pub async fn get_email_html(
     State(state): State<AppState>,
 ) -> Html<String> {
     let client = s3::Client::new(&state.aws_config);
-    let call = client.get_object().bucket(&state.mail_config.mail_bucket).key(key_id);
+    let call = client
+        .get_object()
+        .bucket(&state.mail_config.mail_bucket)
+        .key(key_id);
 
     let response = call.clone().send().await.unwrap();
     let data = response.body.collect().await.expect("error reading data");
@@ -62,7 +65,12 @@ pub struct Mail {
     from: Vec<String>,
 }
 
-pub async fn list_email(State(state): State<AppState>) -> Json<Value> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ListEmailResponse {
+    data: Vec<Mail>,
+}
+
+pub async fn list_email(State(state): State<AppState>) -> Json<ListEmailResponse> {
     // let client = s3::Client::new(&state.aws_config);
     // let call = client.list_objects_v2().bucket(&state.mail_bucket);
     //
@@ -111,5 +119,6 @@ pub async fn list_email(State(state): State<AppState>) -> Json<Value> {
                 .collect::<Vec<String>>(),
         })
         .collect();
-    Json(json!({ "data": mails }))
+    let response = ListEmailResponse { data: mails };
+    Json(response)
 }

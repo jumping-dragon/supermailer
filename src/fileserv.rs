@@ -11,7 +11,7 @@ cfg_if! { if #[cfg(feature = "ssr")] {
     use tower::ServiceExt;
     use tower_http::services::ServeDir;
     use leptos::*;
-    use crate::app::App;
+    use crate::ui::Ui;
 
     pub async fn file_and_error_handler(uri: Uri, State(options): State<LeptosOptions>, req: Request<Body>) -> AxumResponse {
         let root = options.site_root.clone();
@@ -20,7 +20,7 @@ cfg_if! { if #[cfg(feature = "ssr")] {
         if res.status() == StatusCode::OK {
             res.into_response()
         } else {
-            let handler = leptos_axum::render_app_to_stream(options.to_owned(), move || view!{<App/>});
+            let handler = leptos_axum::render_app_to_stream(options.to_owned(), move || view!{<Ui/>});
             handler(req).await.into_response()
         }
     }

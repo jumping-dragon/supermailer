@@ -1,38 +1,9 @@
-use crate::error_template::{AppError, ErrorTemplate};
 use leptos::*;
 use leptos_meta::*;
-use leptos_router::*;
-
-#[component]
-pub fn App() -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
-    provide_meta_context();
-
-    view! {
-        <Stylesheet id="leptos" href="/pkg/supermailer.css" />
-        <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-
-        // sets the document title
-        <Title text="Welcome to Leptos" />
-
-        // content for this welcome page
-        <Router fallback=|| {
-            let mut outside_errors = Errors::default();
-            outside_errors.insert_with_default_key(AppError::NotFound);
-            view! { <ErrorTemplate outside_errors /> }.into_view()
-        }>
-            <main>
-                <Routes>
-                    <Route path="/" view=HomePage />
-                </Routes>
-            </main>
-        </Router>
-    }
-}
 
 /// Renders the home page of your application.
 #[component]
-fn HomePage() -> impl IntoView {
+pub fn HomePage() -> impl IntoView {
     // Creates a reactive value to update the button
     let (count, set_count) = create_signal(0.00);
     let on_click = move |_| set_count.update(|count| *count += 1.00);
@@ -63,7 +34,7 @@ fn Home() -> impl IntoView {
 
     // thanks to https://tailwindcomponents.com/component/blue-buttons-example for the showcase layout
     view! {
-        <Title text="Leptos + Tailwindcss" />
+        <Title text="c'est un courriel" />
         <main>
             <div class="font-mono text-white bg-gradient-to-tl from-blue-800 to-blue-500">
                 <div class="flex">

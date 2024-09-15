@@ -17,7 +17,7 @@ cfg_if! {
         use leptos_axum::{generate_route_list_with_exclusions, handle_server_fns_with_context, LeptosRoutes};
         use std::env;
         use supermailer::state::{AppState, MailConfig};
-        use supermailer::{app::*, fileserv::file_and_error_handler};
+        use supermailer::{ui::*, fileserv::file_and_error_handler};
         use api::{list_email, get_email_html};
 
         async fn server_fn_handler(
@@ -48,7 +48,7 @@ cfg_if! {
                     // provide_context(auth_session.clone());
                     provide_context(app_state.clone());
                 },
-                App,
+                Ui,
             );
             handler(req).await.into_response()
         }
@@ -80,7 +80,7 @@ cfg_if! {
             // We don't use an address for the lambda function
             #[allow(unused_variables)]
             let addr = leptos_options.site_addr;
-            let routes = generate_route_list_with_exclusions(App, Some(vec!["/api/".to_string(), "/api".to_string()]));
+            let routes = generate_route_list_with_exclusions(Ui, Some(vec!["/api/".to_string(), "/api".to_string()]));
 
             let mail_config = MailConfig {
                 mail_bucket,

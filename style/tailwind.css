@@ -2,3 +2,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+	@apply bg-black;
+	color-scheme: dark;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+	-ms-overflow-style: none;
+}

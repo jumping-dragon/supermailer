@@ -23,8 +23,8 @@ fn get_params(input: SimpleEmailService) -> (String, i64, String, String) {
 }
 
 async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
-    let aws_config = aws_config::defaults(BehaviorVersion::v2023_11_09())
-        // .profile_name(aws_profile_name)
+    let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+        .profile_name("alvinjanuar.com")
         .load()
         .await;
     let client = aws_sdk_dynamodb::Client::new(&aws_config);
@@ -45,6 +45,13 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
             }
         })
         .collect();
+
+    let calls = try_join_all(
+        records
+            .iter()
+            .map(|x| add_user_if_not_exist(&client, &x.pk, &table)),
+    )
+    .await;
 
     let calls = try_join_all(records.iter().map(|x| add_item(&client, &x, &table))).await;
 
@@ -94,14 +101,9 @@ async fn add_item(
         .item("subject", subject)
         .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
 
-    // println!("Executing request [{request:#?}] to add item...");
-
     let resp = request.send().await?;
 
-    // println!("Resp [{resp:#?}]");
-
     let consumed_capacity = resp.consumed_capacity().unwrap();
-
     let capacity_units = consumed_capacity.capacity_units.unwrap();
 
     println!(
@@ -113,6 +115,65 @@ async fn add_item(
     );
 
     Ok(item.pk.clone())
+}
+
+// TODO: Error handling
+async fn add_user_if_not_exist(
+    client: &Client,
+    user: &String,
+    table: &String,
+) -> Result<(), aws_sdk_dynamodb::Error> {
+    let subject = AttributeValue::S(user.to_string());
+    let user_table = "SupermailerUserTable".to_string();
+
+    let call = client
+        .query()
+        .table_name(table)
+        .key_condition_expression("pk = :pk")
+        .projection_expression("pk, sk, subject")
+        .expression_attribute_values(":pk", subject.clone())
+        .limit(1);
+
+    let resp = call.send().await?;
+
+    if resp.count == 0 {
+        let request = client
+            .put_item()
+            .table_name(&user_table)
+            .item("pk", AttributeValue::S("USER".to_string()))
+            .item("sk", subject)
+            .item("message_count", AttributeValue::N("1".to_string()))
+            .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
+
+        let resp = request.send().await?;
+        let consumed_capacity = resp.consumed_capacity().unwrap();
+        let capacity_units = consumed_capacity.capacity_units.unwrap();
+
+        println!(
+            "Added user {:?}, used {:?} capacity_units",
+            user, capacity_units
+        );
+    } else {
+        let request = client
+            .update_item()
+            .table_name(&user_table)
+            .key("pk", AttributeValue::S("USER".to_string()))
+            .key("sk", subject)
+            .update_expression("ADD message_count :one")
+            .expression_attribute_values(":one", AttributeValue::N("1".to_string()))
+            .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
+
+        let resp = request.send().await?;
+        let consumed_capacity = resp.consumed_capacity().unwrap();
+        let capacity_units = consumed_capacity.capacity_units.unwrap();
+
+        println!(
+            "Iterated message count of user {:?}, used {:?} capacity_units",
+            user, capacity_units
+        );
+    }
+
+    Ok(())
 }
 
 #[tokio::main]

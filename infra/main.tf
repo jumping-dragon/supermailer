@@ -367,3 +367,22 @@ resource "aws_dynamodb_table" "example" {
     type = "N"
   }
 }
+
+resource "aws_dynamodb_table" "user" {
+  name             = "SupermailerUserTable"
+  hash_key         = "pk"
+  range_key        = "sk"
+  billing_mode     = "PAY_PER_REQUEST"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
+
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+}

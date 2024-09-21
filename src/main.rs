@@ -63,6 +63,7 @@ cfg_if! {
             }
             let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
             let mail_db = env::var("MAIL_DB").expect("MAIL_DB not set");
+            let user_db = env::var("USER_DB").expect("USER_DB not set");
             // let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
 
             let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
@@ -85,6 +86,7 @@ cfg_if! {
             let mail_config = MailConfig {
                 mail_bucket,
                 mail_db,
+                user_db
             };
 
             let state = AppState {

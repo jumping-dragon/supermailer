@@ -1,6 +1,6 @@
 use leptos::*;
 
-use crate::api_types::{ListEmailsResponse, Mail};
+use crate::api_types::{ListEmailsResponse, ListUsersResponse, Mail};
 use crate::ui::components::badge::Badge;
 use crate::ui::components::input::Input;
 use crate::ui::components::switch::Switch;
@@ -17,11 +17,30 @@ pub async fn list_emails_fn(email: String) -> Result<ListEmailsResponse, ServerF
     }
 }
 
+#[server(ListUsers, "/api_fn")]
+pub async fn list_users_fn() -> Result<ListUsersResponse, ServerFnError> {
+    use crate::api::list_users;
+    use crate::state::AppState;
+    let state = use_context::<AppState>();
+
+    match state {
+        Some(state) => Ok(list_users(state).await),
+        None => Err(ServerFnError::ServerError("error_state".to_string())),
+    }
+}
+
 /// Renders the home page of your application.
 #[component]
 pub fn MailPage() -> impl IntoView {
     // Creates a reactive value to update the button
     let (count, set_count) = create_signal(50.00);
+
+    let users = create_local_resource(
+        count,
+        // every time `count` changes, this will run
+        move |value| async move { list_users_fn().await },
+    );
+
     let mails = create_local_resource(
         count,
         // every time `count` changes, this will run
@@ -38,6 +57,14 @@ pub fn MailPage() -> impl IntoView {
                 <div class="flex flex-col py-3 ml-5 h-screen border-white w-[600px] border-x">
                     <div class="px-3">
                         <Input />
+                        <input
+                            type="range"
+                            max="100"
+                            value=count
+                            on:change=move |event| {
+                                set_count(event_target_value(&event).parse::<f64>().unwrap());
+                            }
+                        />
                     </div>
                     <div class="relative my-1">
                         <div class="absolute left-0 -translate-x-1/2">
@@ -49,6 +76,20 @@ pub fn MailPage() -> impl IntoView {
                         <hr class="mt-2.5 w-full border-zinc-800 box-border" />
                     </div>
                     <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
+                        {move || match users.get() {
+                            None => view! { <p>"Loading..."</p> }.into_view(),
+                            Some(data) => {
+                                match data {
+                                    Ok(api) => {
+                                        api.data
+                                            .into_iter()
+                                            .map(|user| { view! { <div>{user.sk}</div> }.into_view() })
+                                            .collect()
+                                    }
+                                    Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                }
+                            }
+                        }}
                         {move || match mails.get() {
                             None => view! { <p>"Loading..."</p> }.into_view(),
                             Some(data) => {

@@ -18,4 +18,5 @@ pub struct AppState {
 pub struct MailConfig {
     pub mail_bucket: String,
     pub mail_db: String,
+    pub user_db: String,
 }

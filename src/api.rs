@@ -1,4 +1,4 @@
-use crate::api_types::{ListEmailsResponse, Mail};
+use crate::api_types::{ListEmailsResponse, ListUsersResponse, Mail, User};
 use crate::state::AppState;
 use aws_sdk_dynamodb as dynamodb;
 use aws_sdk_s3 as s3;
@@ -112,4 +112,32 @@ pub async fn list_emails(state: AppState) -> ListEmailsResponse {
         .collect();
     ListEmailsResponse { data: mails }
 }
+
+pub async fn list_users(state: AppState) -> ListUsersResponse {
+    let _client = dynamodb::Client::new(&state.aws_config);
+    let call = _client
+        .query()
+        .table_name(&state.mail_config.user_db)
+        .key_condition_expression("pk = :pk")
+        .projection_expression("pk, sk, message_count")
+        .expression_attribute_values(":pk", AttributeValue::S("USER".to_string()))
+        .limit(20);
+
+    let resp = call.send().await.unwrap();
+    let users: Vec<User> = resp
+        .items()
+        .iter()
+        .map(|x| User {
+            pk: x.get("pk").unwrap().as_s().unwrap().to_string(),
+            sk: x.get("sk").unwrap().as_s().unwrap().to_string(),
+            message_count: x
+                .get("message_count")
+                .unwrap()
+                .as_n()
+                .unwrap()
+                .parse::<i64>()
+                .unwrap(),
+        })
+        .collect();
+    ListUsersResponse { data: users }
 }

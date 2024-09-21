@@ -18,7 +18,7 @@ cfg_if! {
         use std::env;
         use supermailer::state::{AppState, MailConfig};
         use supermailer::{ui::*, fileserv::file_and_error_handler};
-        use api::{list_email, get_email_html};
+        use api::{list_emails_api, get_email_html};
 
         async fn server_fn_handler(
             State(app_state): State<AppState>,
@@ -95,7 +95,7 @@ cfg_if! {
             };
 
             let api_route = Router::new()
-                .route("/", get(list_email))
+                .route("/", get(list_emails_api))
                 .route("/email/:id", get(get_email_html))
                 .with_state(state.clone());
 

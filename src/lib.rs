@@ -1,11 +1,12 @@
 use cfg_if::cfg_if;
 #[cfg(feature = "ssr")]
 pub mod api;
-pub mod ui;
 pub mod error_template;
 pub mod fileserv;
 #[cfg(feature = "ssr")]
 pub mod state;
+pub mod ui;
+pub mod api_types;
 
 cfg_if! { if #[cfg(feature = "hydrate")] {
     use leptos::*;

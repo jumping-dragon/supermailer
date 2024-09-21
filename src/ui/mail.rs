@@ -1,14 +1,35 @@
 use leptos::*;
 
+use crate::api_types::{ListEmailsResponse, Mail};
 use crate::ui::components::badge::Badge;
 use crate::ui::components::input::Input;
 use crate::ui::components::switch::Switch;
+
+#[server(ListEmails, "/api_fn")]
+pub async fn list_emails_fn(email: String) -> Result<ListEmailsResponse, ServerFnError> {
+    use crate::api::list_emails;
+    use crate::state::AppState;
+    let state = use_context::<AppState>();
+
+    match state {
+        Some(state) => Ok(list_emails(state).await),
+        None => Err(ServerFnError::ServerError("error_state".to_string())),
+    }
+}
 
 /// Renders the home page of your application.
 #[component]
 pub fn MailPage() -> impl IntoView {
     // Creates a reactive value to update the button
-    let (count, _set_count) = create_signal(50.00);
+    let (count, set_count) = create_signal(50.00);
+    let mails = create_local_resource(
+        count,
+        // every time `count` changes, this will run
+        move |value| async move {
+            println!("count {}", count());
+            list_emails_fn(value.to_string()).await
+        },
+    );
 
     view! {
         <div class="bg-black">
@@ -28,11 +49,20 @@ pub fn MailPage() -> impl IntoView {
                         <hr class="mt-2.5 w-full border-zinc-800 box-border" />
                     </div>
                     <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
-                        <Card />
-                        <Card />
-                        <Card />
-                        <Card />
-                        <Card />
+                        {move || match mails.get() {
+                            None => view! { <p>"Loading..."</p> }.into_view(),
+                            Some(data) => {
+                                match data {
+                                    Ok(api) => {
+                                        api.data
+                                            .into_iter()
+                                            .map(|mail| { view! { <Card mail=mail /> }.into_view() })
+                                            .collect()
+                                    }
+                                    Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                }
+                            }
+                        }}
                     </div>
                 </div>
                 <div class="flex flex-col flex-grow py-6 px-8 h-screen">
@@ -66,11 +96,11 @@ fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
 }
 
 #[component]
-fn Card() -> impl IntoView {
+fn Card(mail: Mail) -> impl IntoView {
     view! {
         <div class="flex flex-col gap-y-1.5 p-6 rounded-lg border bg-zinc-950 border-zinc-800">
-            <h1 class="text-2xl font-semibold">Teset Smith</h1>
-            <p>[UPDATED] Need help ASAP</p>
+            <h1 class="text-2xl font-semibold">{mail.from}</h1>
+            <p>{mail.subject}</p>
             <p class="overflow-y-hidden text-base text-zinc-400 h-[2lh] text-ellipsis line-clamp-2">
                 Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.
             </p>

@@ -1,3 +1,4 @@
+use crate::api_types::{ListEmailsResponse, Mail};
 use crate::state::AppState;
 use aws_sdk_dynamodb as dynamodb;
 use aws_sdk_s3 as s3;
@@ -56,21 +57,7 @@ pub async fn get_email_html(
     Html(raw_body)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Mail {
-    pk: String,
-    sk: i64,
-    message_id: String,
-    subject: String,
-    from: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ListEmailResponse {
-    data: Vec<Mail>,
-}
-
-pub async fn list_email(State(state): State<AppState>) -> Json<ListEmailResponse> {
+pub async fn list_emails_api(State(state): State<AppState>) -> Json<ListEmailsResponse> {
     // let client = s3::Client::new(&state.aws_config);
     // let call = client.list_objects_v2().bucket(&state.mail_bucket);
     //
@@ -78,7 +65,11 @@ pub async fn list_email(State(state): State<AppState>) -> Json<ListEmailResponse
     // let array = response.contents();
     // let parsed: Vec<String> = array.iter().map(|x| x.key.clone().unwrap()).collect();
     // println!("{:#?}", parsed);
+    let response = list_emails(state).await;
+    Json(response)
+}
 
+pub async fn list_emails(state: AppState) -> ListEmailsResponse {
     let _client = dynamodb::Client::new(&state.aws_config);
     let call = _client
         .query()
@@ -119,6 +110,6 @@ pub async fn list_email(State(state): State<AppState>) -> Json<ListEmailResponse
                 .collect::<Vec<String>>(),
         })
         .collect();
-    let response = ListEmailResponse { data: mails };
-    Json(response)
+    ListEmailsResponse { data: mails }
+}
 }

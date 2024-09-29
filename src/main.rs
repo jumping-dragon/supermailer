@@ -97,7 +97,7 @@ cfg_if! {
             };
 
             let api_route = Router::new()
-                .route("/", get(list_emails_api))
+                .route("/:email", get(list_emails_api))
                 .route("/email/:id", get(get_email_html))
                 .with_state(state.clone());
 

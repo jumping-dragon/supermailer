@@ -13,7 +13,7 @@ pub async fn list_emails_fn(email: String) -> Result<ListEmailsResponse, ServerF
     let state = use_context::<AppState>();
 
     match state {
-        Some(state) => Ok(list_emails(state).await),
+        Some(state) => Ok(list_emails(state, email).await),
         None => Err(ServerFnError::ServerError("error_state".to_string())),
     }
 }
@@ -35,6 +35,7 @@ pub async fn list_users_fn() -> Result<ListUsersResponse, ServerFnError> {
 pub fn MailPage() -> impl IntoView {
     // Creates a reactive value to update the button
     let (count, set_count) = create_signal(50.00);
+    let (email, set_email) = create_signal("web@alvinjanuar.com".to_string());
 
     let users = create_local_resource(
         count,
@@ -43,10 +44,10 @@ pub fn MailPage() -> impl IntoView {
     );
 
     let mails = create_local_resource(
-        count,
+        email,
         // every time `count` changes, this will run
         move |value| async move {
-            println!("count {}", count());
+            println!("email {}", email());
             list_emails_fn(value.to_string()).await
         },
     );
@@ -69,7 +70,17 @@ pub fn MailPage() -> impl IntoView {
                     </div>
                     <div class="relative my-1">
                         <div class="absolute left-0 -translate-x-1/2">
-                            <Badge>8</Badge>
+                            {move || match mails.get() {
+                                None => view! { <Badge>...</Badge> }.into_view(),
+                                Some(data) => {
+                                    match data {
+                                        Ok(api) => {
+                                            view! { <Badge>{api.data.len()}</Badge> }.into_view()
+                                        }
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                    }
+                                }
+                            }}
                         </div>
                         <div class="absolute right-0 translate-x-1/2">
                             <Switch />
@@ -77,34 +88,54 @@ pub fn MailPage() -> impl IntoView {
                         <hr class="mt-2.5 w-full border-zinc-800 box-border" />
                     </div>
                     <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
-                        {move || match users.get() {
-                            None => view! { <p>"Loading..."</p> }.into_view(),
-                            Some(data) => {
-                                match data {
-                                    Ok(api) => {
-                                        api.data
-                                            .into_iter()
-                                            .map(|user| { view! { <div>{user.sk}</div> }.into_view() })
-                                            .collect()
+                        <select on:change=move |ev| {
+                            let new_value = event_target_value(&ev);
+                            set_email(new_value.parse::<String>().unwrap());
+                        }>
+                            {move || match users.get() {
+                                None => view! { <p>"Loading..."</p> }.into_view(),
+                                Some(data) => {
+                                    match data {
+                                        Ok(api) => {
+                                            api.data
+                                                .into_iter()
+                                                .map(|user| {
+                                                    let is_current = user.clone().sk == email();
+                                                    view! {
+                                                        <option
+                                                            class=("bg-white", is_current)
+                                                            value=user.sk.clone()
+                                                            selected=is_current
+                                                        >
+                                                            {user.sk.clone()}
+                                                        </option>
+                                                    }
+                                                })
+                                                .collect_view()
+                                        }
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
                                     }
-                                    Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
                                 }
-                            }
-                        }}
-                        {move || match mails.get() {
-                            None => view! { <p>"Loading..."</p> }.into_view(),
-                            Some(data) => {
-                                match data {
-                                    Ok(api) => {
-                                        api.data
-                                            .into_iter()
-                                            .map(|mail| { view! { <Card mail=mail /> }.into_view() })
-                                            .collect()
+                            }}
+                        </select>
+                        <Transition fallback=move || {
+                            view! { <p>"Loading..."</p> }
+                        }>
+                            {move || match mails.get() {
+                                None => view! { <p>"No Data"</p> }.into_view(),
+                                Some(data) => {
+                                    match data {
+                                        Ok(api) => {
+                                            api.data
+                                                .into_iter()
+                                                .map(|mail| { view! { <Card mail=mail /> }.into_view() })
+                                                .collect()
+                                        }
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
                                     }
-                                    Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
                                 }
-                            }
-                        }}
+                            }}
+                        </Transition>
                     </div>
                 </div>
                 <div class="flex flex-col flex-grow py-6 px-8 h-screen">

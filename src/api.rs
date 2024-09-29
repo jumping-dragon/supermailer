@@ -57,7 +57,10 @@ pub async fn get_email_html(
     Html(raw_body)
 }
 
-pub async fn list_emails_api(State(state): State<AppState>) -> Json<ListEmailsResponse> {
+pub async fn list_emails_api(
+    Path(email): Path<String>,
+    State(state): State<AppState>,
+) -> Json<ListEmailsResponse> {
     // let client = s3::Client::new(&state.aws_config);
     // let call = client.list_objects_v2().bucket(&state.mail_bucket);
     //
@@ -65,11 +68,11 @@ pub async fn list_emails_api(State(state): State<AppState>) -> Json<ListEmailsRe
     // let array = response.contents();
     // let parsed: Vec<String> = array.iter().map(|x| x.key.clone().unwrap()).collect();
     // println!("{:#?}", parsed);
-    let response = list_emails(state).await;
+    let response = list_emails(state, email).await;
     Json(response)
 }
 
-pub async fn list_emails(state: AppState) -> ListEmailsResponse {
+pub async fn list_emails(state: AppState, email: String) -> ListEmailsResponse {
     let _client = dynamodb::Client::new(&state.aws_config);
     let call = _client
         .query()
@@ -79,7 +82,7 @@ pub async fn list_emails(state: AppState) -> ListEmailsResponse {
         .expression_attribute_names("#r", "raw")
         .expression_attribute_names("#ch", "commonHeaders")
         .expression_attribute_names("#f", "from")
-        .expression_attribute_values(":pk", AttributeValue::S("web@alvinjanuar.com".to_string()))
+        .expression_attribute_values(":pk", AttributeValue::S(email))
         .limit(20);
 
     let resp = call.send().await.unwrap();

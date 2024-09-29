@@ -4,6 +4,7 @@ use crate::api_types::{ListEmailsResponse, ListUsersResponse, Mail};
 use crate::ui::components::badge::Badge;
 use crate::ui::components::input::Input;
 use crate::ui::components::switch::Switch;
+use chrono::{Duration, Utc};
 
 #[server(ListEmails, "/api_fn")]
 pub async fn list_emails_fn(email: String) -> Result<ListEmailsResponse, ServerFnError> {
@@ -148,8 +149,29 @@ fn Card(mail: Mail) -> impl IntoView {
             <hr class="my-2.5 w-full border-zinc-800 box-border" />
             <div class="flex justify-between">
                 <Badge>badge</Badge>
-                <div class="text-zinc-400">01:16 am</div>
+                <div class="text-zinc-400">
+                    <RelativeTime timestamp=mail.sk />
+                </div>
             </div>
         </div>
     }
+}
+
+#[component]
+pub fn RelativeTime(#[prop(into)] timestamp: i64) -> impl IntoView {
+    let relative_time = move || {
+        let now = Utc::now().timestamp();
+        let diff = Duration::seconds(now - timestamp);
+
+        match diff {
+            d if d < Duration::seconds(60) => "just now".to_string(),
+            d if d < Duration::minutes(60) => format!("{} minutes ago", d.num_minutes()),
+            d if d < Duration::hours(24) => format!("{} hours ago", d.num_hours()),
+            d if d < Duration::days(30) => format!("{} days ago", d.num_days()),
+            d if d < Duration::days(365) => format!("{} months ago", d.num_days() / 30),
+            _ => format!("{} years ago", diff.num_days() / 365),
+        }
+    };
+
+    view! { <span>{relative_time}</span> }
 }

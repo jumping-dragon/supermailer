@@ -56,38 +56,17 @@ pub fn MailPage() -> impl IntoView {
         <div class="bg-black">
             <ProgressNav progress=count />
             <div class="flex items-center text-white">
-                <div class="flex flex-col py-3 ml-5 h-screen border-white w-[600px] border-x">
-                    <div class="px-3">
+                <div class="flex flex-col flex-grow py-3 ml-5 h-screen border-white shrink-0 w-[600px] border-x">
+                    <div class="flex flex-col gap-y-3 px-3">
                         <Input />
-                        <input
-                            type="range"
-                            max="100"
-                            value=count
-                            on:change=move |event| {
-                                set_count(event_target_value(&event).parse::<f64>().unwrap());
-                            }
-                        />
-                    </div>
-                    <div class="relative my-1">
-                        <div class="absolute left-0 -translate-x-1/2">
-                            {move || match mails.get() {
-                                None => view! { <Badge>...</Badge> }.into_view(),
-                                Some(data) => {
-                                    match data {
-                                        Ok(api) => {
-                                            view! { <Badge>{api.data.len()}</Badge> }.into_view()
-                                        }
-                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
-                                    }
-                                }
-                            }}
-                        </div>
-                        <div class="absolute right-0 translate-x-1/2">
-                            <Switch />
-                        </div>
-                        <hr class="mt-2.5 w-full border-zinc-800 box-border" />
-                    </div>
-                    <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
+                        // <input
+                        // type="range"
+                        // max="100"
+                        // value=count
+                        // on:change=move |event| {
+                        // set_count(event_target_value(&event).parse::<f64>().unwrap());
+                        // }
+                        // />
                         <select on:change=move |ev| {
                             let new_value = event_target_value(&ev);
                             set_email(new_value.parse::<String>().unwrap());
@@ -118,6 +97,27 @@ pub fn MailPage() -> impl IntoView {
                                 }
                             }}
                         </select>
+                    </div>
+                    <div class="relative my-1">
+                        <div class="absolute left-0 -translate-x-1/2">
+                            {move || match mails.get() {
+                                None => view! { <Badge>...</Badge> }.into_view(),
+                                Some(data) => {
+                                    match data {
+                                        Ok(api) => {
+                                            view! { <Badge>{api.data.len()}</Badge> }.into_view()
+                                        }
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                    }
+                                }
+                            }}
+                        </div>
+                        <div class="absolute right-0 translate-x-1/2">
+                            <Switch />
+                        </div>
+                        <hr class="mt-2.5 w-full border-zinc-800 box-border" />
+                    </div>
+                    <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
                         <Transition fallback=move || {
                             view! { <p>"Loading..."</p> }
                         }>
@@ -138,7 +138,7 @@ pub fn MailPage() -> impl IntoView {
                         </Transition>
                     </div>
                 </div>
-                <div class="flex flex-col flex-grow py-6 px-8 h-screen">
+                <div class="hidden flex-col flex-grow py-6 px-8 h-screen sm:flex">
                     <h1 class="text-2xl font-semibold">Teset Smith</h1>
                     <p>[UPDATED] Need help ASAP</p>
                     <div class="flex justify-between">

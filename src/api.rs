@@ -83,6 +83,7 @@ pub async fn list_emails(state: AppState, email: String) -> ListEmailsResponse {
         .expression_attribute_names("#ch", "commonHeaders")
         .expression_attribute_names("#f", "from")
         .expression_attribute_values(":pk", AttributeValue::S(email))
+        .scan_index_forward(false)
         .limit(20);
 
     let resp = call.send().await.unwrap();

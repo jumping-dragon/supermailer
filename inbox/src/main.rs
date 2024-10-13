@@ -1,12 +1,15 @@
-use aws_config::BehaviorVersion;
+use aws_config::{BehaviorVersion, SdkConfig};
 use aws_lambda_events::ses::{SimpleEmailEvent, SimpleEmailMessage, SimpleEmailService};
 use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::Client;
+use aws_sdk_s3 as s3;
+use dotenvy::dotenv;
 use futures::future::try_join_all;
 use lambda_runtime::{service_fn, Context, Error, LambdaEvent};
+use mail_parser::Message;
 use serde::{Deserialize, Serialize};
 
-use std::{fs::File, io::BufReader};
+use std::{env, fs::File, io::BufReader};
 
 fn get_params(input: SimpleEmailService) -> (String, i64, String, String) {
     let pk = &input.receipt.recipients[0];
@@ -174,6 +177,42 @@ async fn add_user_if_not_exist(
     }
 
     Ok(())
+}
+
+// fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
+//     let mut f = File::open(&filename).expect("no file found");
+//     let metadata = fs::metadata(&filename).expect("unable to read metadata");
+//     let mut buffer = vec![0; metadata.len() as usize];
+//     f.read(&mut buffer).expect("buffer overflow");
+//
+//     buffer
+// }
+
+fn get_first_sentence(contents: Vec<u8>) -> String {
+    let message = Message::parse(&contents).unwrap();
+    let message_body = message.body_text(0).unwrap();
+    let text_contents = message_body
+        .split("\r\n")
+        .map(|s| s.trim())
+        .filter(|x| !x.is_empty())
+        .take(3)
+        .collect::<String>();
+
+    text_contents
+}
+
+pub async fn get_email_first_sentence(
+    key_id: String,
+    mail_bucket: &String,
+    aws_config: &SdkConfig,
+) -> String {
+    let client = s3::Client::new(aws_config);
+    let call = client.get_object().bucket(mail_bucket).key(key_id);
+
+    let response = call.clone().send().await.unwrap();
+    let data = response.body.collect().await.expect("error reading data");
+    let contents = data.into_bytes();
+    get_first_sentence(contents.to_vec())
 }
 
 #[tokio::main]

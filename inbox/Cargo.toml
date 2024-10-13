@@ -10,6 +10,7 @@ edition = "2021"
 aws-config = "1.1.8"
 aws-sdk-config = "0.25.1"
 aws-sdk-dynamodb = "1.18.0"
+aws-sdk-s3 = { version = "1.20.0" }
 serde_json = "1"
 lambda_runtime = "0.8.3"
 tokio = { version = "1", features = ["full"] }
@@ -19,3 +20,5 @@ futures = "0.3.17"
 serde_dynamo = { version = "4", features = ["aws-sdk-dynamodb+1"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+mail-parser = { version = "0.8.2" }
+dotenvy = { version = "0.15.6" }

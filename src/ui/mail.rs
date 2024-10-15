@@ -175,7 +175,7 @@ fn Card(mail: Mail) -> impl IntoView {
             <h1 class="text-2xl font-semibold">{mail.from}</h1>
             <p>{mail.subject}</p>
             <p class="overflow-y-hidden text-base text-zinc-400 h-[2lh] text-ellipsis line-clamp-2">
-                Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.
+                {mail.first_sentence}
             </p>
             <hr class="my-2.5 w-full border-zinc-800 box-border" />
             <div class="flex justify-between">

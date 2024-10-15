@@ -78,7 +78,7 @@ pub async fn list_emails(state: AppState, email: String) -> ListEmailsResponse {
         .query()
         .table_name(&state.mail_config.mail_db)
         .key_condition_expression("pk = :pk")
-        .projection_expression("pk, message_id, sk, subject, #r.#ch.#f")
+        .projection_expression("pk, message_id, sk, subject, #r.#ch.#f, first_sentence")
         .expression_attribute_names("#r", "raw")
         .expression_attribute_names("#ch", "commonHeaders")
         .expression_attribute_names("#f", "from")
@@ -112,6 +112,7 @@ pub async fn list_emails(state: AppState, email: String) -> ListEmailsResponse {
                 .iter()
                 .map(|x| x.as_s().unwrap().to_owned())
                 .collect::<Vec<String>>(),
+            first_sentence: x.get("first_sentence").unwrap().as_s().unwrap().to_string(),
         })
         .collect();
     ListEmailsResponse { data: mails }

@@ -7,6 +7,7 @@ pub struct Mail {
     pub message_id: String,
     pub subject: String,
     pub from: Vec<String>,
+    pub first_sentence: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

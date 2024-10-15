@@ -4,7 +4,7 @@ use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::Client;
 use aws_sdk_s3 as s3;
 use dotenvy::dotenv;
-use futures::future::try_join_all;
+use futures::future::{join_all, try_join_all};
 use lambda_runtime::{service_fn, Context, Error, LambdaEvent};
 use mail_parser::Message;
 use serde::{Deserialize, Serialize};
@@ -26,12 +26,18 @@ fn get_params(input: SimpleEmailService) -> (String, i64, String, String) {
 }
 
 async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
+    #[cfg(debug_assertions)]
+    {
+        dotenv().expect(".env file not found");
+    }
+    let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
+    let mail_db = env::var("MAIL_DB").expect("MAIL_DB not set");
+
     let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
         .profile_name("alvinjanuar.com")
         .load()
         .await;
     let client = aws_sdk_dynamodb::Client::new(&aws_config);
-    let table = "SupermailerTable".to_string();
 
     let payload = event.payload;
     let records: Vec<Mail> = payload
@@ -45,18 +51,40 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
                 message_id,
                 subject,
                 raw: Some(x.ses.mail.clone()),
+                first_sentence: None,
             }
         })
         .collect();
 
-    let calls = try_join_all(
-        records
+    let records_with_first_sentence: Vec<Mail> = join_all(records.iter().map(|record| async {
+        let first_sentence =
+            get_email_first_sentence(record.message_id.clone(), &mail_bucket, &aws_config).await;
+        let new_mail = Mail {
+            pk: record.pk.clone(),
+            sk: record.sk.clone(),
+            message_id: record.message_id.clone(),
+            subject: record.subject.clone(),
+            raw: record.raw.clone(),
+            first_sentence: Some(first_sentence),
+        };
+        new_mail
+    }))
+    .await;
+
+    // TODO: handle error
+    let _ = try_join_all(
+        records_with_first_sentence
             .iter()
-            .map(|x| add_user_if_not_exist(&client, &x.pk, &table)),
+            .map(|x| add_user_if_not_exist(&client, &x.pk, &mail_db)),
     )
     .await;
 
-    let calls = try_join_all(records.iter().map(|x| add_item(&client, &x, &table))).await;
+    let calls = try_join_all(
+        records_with_first_sentence
+            .iter()
+            .map(|x| add_item(&client, &x, &mail_db)),
+    )
+    .await;
 
     match calls {
         Err(error) => println!("Error: {:?}", error),
@@ -73,6 +101,7 @@ pub struct Mail {
     message_id: String,
     subject: String,
     raw: Option<SimpleEmailMessage>,
+    first_sentence: Option<String>,
 }
 
 // TODO: Error handling
@@ -87,12 +116,14 @@ async fn add_item(
         sk,
         message_id,
         subject,
+        first_sentence,
     } = item;
     let pk = AttributeValue::S(pk.to_string());
     let raw = AttributeValue::M(serde_dynamo::to_item(raw).unwrap());
     let sk = AttributeValue::N(sk.to_string());
     let message_id = AttributeValue::S(message_id.to_string());
     let subject = AttributeValue::S(subject.to_string());
+    let first_sentence = AttributeValue::S(first_sentence.clone().unwrap().to_string());
 
     let request = client
         .put_item()
@@ -102,6 +133,7 @@ async fn add_item(
         .item("sk", sk)
         .item("message_id", message_id)
         .item("subject", subject)
+        .item("first_sentence", first_sentence)
         .return_consumed_capacity(aws_sdk_dynamodb::types::ReturnConsumedCapacity::Total);
 
     let resp = request.send().await?;

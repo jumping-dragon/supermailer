@@ -319,6 +319,7 @@ resource "aws_lambda_function" "inbox_lambda" {
       # AWS_STS_REGIONAL_ENDPOINTS="regional",
       # TF_LOG="trace"
       MAIL_BUCKET="${aws_s3_bucket.mail-bucket.bucket}"
+      MAIL_DB="${aws_dynamodb_table.example.name}"
     }
   }
 

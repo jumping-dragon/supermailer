@@ -180,6 +180,9 @@ fn Card(mail: Mail) -> impl IntoView {
             <hr class="my-2.5 w-full border-zinc-800 box-border" />
             <div class="flex justify-between">
                 <Badge>badge</Badge>
+                <a href="/api/email/".to_string() + &mail.message_id target="_blank">
+                    Open Mail
+                </a>
                 <div class="text-zinc-400">
                     <RelativeTime timestamp=mail.sk />
                 </div>

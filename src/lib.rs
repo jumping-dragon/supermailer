@@ -1,12 +1,10 @@
 use cfg_if::cfg_if;
 #[cfg(feature = "ssr")]
 pub mod api;
-pub mod error_template;
-pub mod fileserv;
+pub mod api_types;
 #[cfg(feature = "ssr")]
 pub mod state;
 pub mod ui;
-pub mod api_types;
 
 cfg_if! { if #[cfg(feature = "hydrate")] {
     use leptos::*;
@@ -19,6 +17,6 @@ cfg_if! { if #[cfg(feature = "hydrate")] {
         _ = console_log::init_with_level(log::Level::Debug);
         console_error_panic_hook::set_once();
 
-        leptos::mount_to_body(Ui);
+        leptos::mount::hydrate_body(Ui);
     }
 }}

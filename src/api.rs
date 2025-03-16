@@ -38,10 +38,15 @@ pub struct Test {
 //     Ok(ret)
 // }
 
-pub async fn get_email_html(
+pub async fn get_email_html_api(
     Path(key_id): Path<String>,
     State(state): State<AppState>,
 ) -> Html<String> {
+    let response = get_email_html(key_id, state).await;
+    Html(response)
+}
+
+pub async fn get_email_html(key_id: String, state: AppState) -> String {
     let client = s3::Client::new(&state.aws_config);
     let call = client
         .get_object()
@@ -54,7 +59,7 @@ pub async fn get_email_html(
 
     let message = Message::parse(&contents).unwrap();
     let raw_body = message.body_html(0).unwrap().to_string();
-    Html(raw_body)
+    raw_body
 }
 
 pub async fn list_emails_api(

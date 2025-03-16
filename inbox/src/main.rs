@@ -33,7 +33,7 @@ async fn handler(event: LambdaEvent<SimpleEmailEvent>) -> Result<(), Error> {
     let mail_bucket = env::var("MAIL_BUCKET").expect("MAIL_BUCKET not set");
     let mail_db = env::var("MAIL_DB").expect("MAIL_DB not set");
 
-    let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+    let aws_config = aws_config::defaults(BehaviorVersion::v2025_01_17())
         .profile_name("alvinjanuar.com")
         .load()
         .await;

@@ -8,11 +8,23 @@ module "template_files" {
   base_dir = "../target/site"
 }
 
+locals {
+  content_types = {
+    css  = "text/css"
+    html = "text/html"
+    js   = "application/javascript"
+    wasm = "application/wasm"
+    ico  = "image/vnd.microsoft.icon"
+  }
+}
+
+
 resource "aws_s3_object" "codebase" {
     for_each = module.template_files.files
         bucket = aws_s3_bucket.bucket.id
         key          = each.key
-        content_type = each.value.content_type
+        content_type     = lookup(local.content_types, element(split(".", each.key), length(split(".", each.key)) - 1), "text/plain")
+        content_encoding = "utf-8"
 
         # The template_files module guarantees that only one of these two attributes
         # will be set for each file, depending on whether it is an in-memory template

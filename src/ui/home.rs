@@ -1,11 +1,11 @@
-use leptos::*;
+use leptos::prelude::*;
 use leptos_meta::*;
 
 /// Renders the home page of your application.
 #[component]
 pub fn HomePage() -> impl IntoView {
     // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(0.00);
+    let (count, set_count) = signal(0.00);
     let on_click = move |_| set_count.update(|count| *count += 1.00);
 
     view! {
@@ -19,7 +19,7 @@ pub fn HomePage() -> impl IntoView {
                     max="100"
                     value=count
                     on:change=move |event| {
-                        set_count(event_target_value(&event).parse::<f64>().unwrap());
+                        set_count.set(event_target_value(&event).parse::<f64>().unwrap());
                     }
                 />
                 <Home />
@@ -30,7 +30,7 @@ pub fn HomePage() -> impl IntoView {
 
 #[component]
 fn Home() -> impl IntoView {
-    let (value, set_value) = create_signal(0);
+    let (value, set_value) = signal(0);
 
     // thanks to https://tailwindcomponents.com/component/blue-buttons-example for the showcase layout
     view! {
@@ -61,7 +61,7 @@ fn Home() -> impl IntoView {
 
 #[component]
 fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
-    let percentage = move || progress() / 100.0;
+    let percentage = move || progress.get() / 100.0;
     view! {
         <div class="fixed top-0 right-0 left-0 h-0.5">
             <div

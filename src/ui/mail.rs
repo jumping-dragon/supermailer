@@ -1,4 +1,6 @@
-use leptos::*;
+use leptos::logging;
+use leptos::prelude::*;
+use leptos_router::hooks::query_signal;
 
 use crate::api_types::{ListEmailsResponse, ListUsersResponse, Mail};
 use crate::ui::components::badge::Badge;
@@ -30,27 +32,44 @@ pub async fn list_users_fn() -> Result<ListUsersResponse, ServerFnError> {
     }
 }
 
+// #[server(GetEmailHtml, "/api_fn")]
+// pub async fn get_email_html_fn(key_id: String) -> Result<String, ServerFnError> {
+//     use crate::api::get_email_html;
+//     use crate::state::AppState;
+//     let state = use_context::<AppState>();
+//
+//     match state {
+//         Some(state) => Ok(get_email_html(key_id, state).await),
+//         None => Err(ServerFnError::ServerError("error_state".to_string())),
+//     }
+// }
+
 /// Renders the home page of your application.
 #[component]
 pub fn MailPage() -> impl IntoView {
     // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(50.00);
-    let (email, set_email) = create_signal("web@alvinjanuar.com".to_string());
+    let (count, _set_count) = signal(50.00);
+    let (email, set_email) = query_signal::<String>("e");
+    // let (current_showing, _set_current_showing) = signal("".to_string());
 
-    let users = create_local_resource(
-        count,
-        // every time `count` changes, this will run
-        move |value| async move { list_users_fn().await },
+    let users = Resource::new(
+        move || count.get(),
+        move |_value| async move { list_users_fn().await },
     );
 
-    let mails = create_local_resource(
-        email,
-        // every time `count` changes, this will run
+    let mails = Resource::new(
+        move || email.get(),
         move |value| async move {
-            println!("email {}", email());
-            list_emails_fn(value.to_string()).await
+            list_emails_fn(value.unwrap_or("web@alvinjanuar.com".to_string())).await
+            // TODO:
+            // Change hardcoded value to first user
         },
     );
+
+    // let showing = Resource::new(
+    //     move || current_showing.get(),
+    //     move |value| async move { get_email_html_fn(value.to_string()).await },
+    // );
 
     view! {
         <div class="bg-black">
@@ -67,50 +86,69 @@ pub fn MailPage() -> impl IntoView {
                         // set_count(event_target_value(&event).parse::<f64>().unwrap());
                         // }
                         // />
-                        <select on:change=move |ev| {
-                            let new_value = event_target_value(&ev);
-                            set_email(new_value.parse::<String>().unwrap());
+                        <Suspense fallback=move || {
+                            view! { <p>Loading...</p> }
                         }>
                             {move || match users.get() {
-                                None => view! { <p>"Loading..."</p> }.into_view(),
+                                None => view! { <p>"Loading..."</p> }.into_any(),
                                 Some(data) => {
                                     match data {
                                         Ok(api) => {
-                                            api.data
-                                                .into_iter()
-                                                .map(|user| {
-                                                    let is_current = user.clone().sk == email();
-                                                    view! {
-                                                        <option
-                                                            class=("bg-white", is_current)
-                                                            value=user.sk.clone()
-                                                            selected=is_current
-                                                        >
-                                                            {user.sk.clone()}
-                                                        </option>
-                                                    }
-                                                })
-                                                .collect_view()
+                                            view! {
+                                                <select on:change=move |ev| {
+                                                    let new_value = event_target_value(&ev);
+                                                    logging::log!("{}", &new_value);
+                                                    set_email.set(Some(new_value.parse::<String>().unwrap()));
+                                                }>
+                                                    <For
+                                                        // a function that returns the items we're iterating over; a signal is fine
+                                                        each=move || api.data.clone()
+                                                        // a unique key for each item
+                                                        key=|user| user.sk.clone()
+                                                        // renders each item to a view
+                                                        children=move |user| {
+                                                            let e = email.get();
+                                                            let is_current = user.clone().sk
+                                                                == e.unwrap_or("web@alvinjanuar.com".to_string());
+                                                            view! {
+                                                                <option
+                                                                    class=("bg-white", is_current)
+                                                                    value=user.sk.clone()
+                                                                    selected=is_current
+                                                                >
+                                                                    {user.sk.clone()}
+                                                                </option>
+                                                            }
+                                                        }
+                                                    />
+                                                </select>
+                                            }
+                                                .into_any()
                                         }
-                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_any(),
                                     }
                                 }
                             }}
-                        </select>
+                        </Suspense>
+                    // </select>
                     </div>
                     <div class="relative my-1">
                         <div class="absolute left-0 -translate-x-1/2">
-                            {move || match mails.get() {
-                                None => view! { <Badge>...</Badge> }.into_view(),
-                                Some(data) => {
-                                    match data {
-                                        Ok(api) => {
-                                            view! { <Badge>{api.data.len()}</Badge> }.into_view()
+                            <Suspense fallback=move || {
+                                view! { <Badge>...</Badge> }
+                            }>
+                                {move || match mails.get() {
+                                    None => view! { <Badge>...</Badge> }.into_any(),
+                                    Some(data) => {
+                                        match data {
+                                            Ok(api) => {
+                                                view! { <Badge>{api.data.len()}</Badge> }.into_any()
+                                            }
+                                            Err(e) => view! { <p>{e.to_string()}</p> }.into_any(),
                                         }
-                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
                                     }
-                                }
-                            }}
+                                }}
+                            </Suspense>
                         </div>
                         <div class="absolute right-0 translate-x-1/2">
                             <Switch />
@@ -122,16 +160,27 @@ pub fn MailPage() -> impl IntoView {
                             view! { <p>"Loading..."</p> }
                         }>
                             {move || match mails.get() {
-                                None => view! { <p>"No Data"</p> }.into_view(),
+                                None => view! { <p>"No Data"</p> }.into_any(),
                                 Some(data) => {
                                     match data {
                                         Ok(api) => {
-                                            api.data
-                                                .into_iter()
-                                                .map(|mail| { view! { <Card mail=mail /> }.into_view() })
-                                                .collect()
+                                            view! {
+                                                <div>
+                                                    <For
+                                                        // a function that returns the items we're iterating over; a signal is fine
+                                                        each=move || api.data.clone()
+                                                        // a unique key for each item
+                                                        key=|mail| mail.sk
+                                                        // renders each item to a view
+                                                        children=move |mail| {
+                                                            view! { <Card mail=mail /> }
+                                                        }
+                                                    />
+                                                </div>
+                                            }
+                                                .into_any()
                                         }
-                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_view(),
+                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_any(),
                                     }
                                 }
                             }}
@@ -146,9 +195,11 @@ pub fn MailPage() -> impl IntoView {
                         <div class="text-zinc-400">01:16 am</div>
                     </div>
                     <hr class="my-2.5 w-full border-zinc-800 box-border" />
-                    <p class="overflow-y-hidden text-base">
-                        Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.
-                    </p>
+                // <p class="overflow-y-hidden text-base">
+                // Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.Deploy your new project in one-click.
+                // </p>
+                //
+                // <p class="overflow-y-hidden text-base">{move || showing.get()}</p>
                 </div>
             </div>
         </div>
@@ -157,7 +208,7 @@ pub fn MailPage() -> impl IntoView {
 
 #[component]
 fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
-    let percentage = move || progress() / 100.0;
+    let percentage = move || progress.get() / 100.0;
     view! {
         <div class="fixed top-0 right-0 left-0 h-0.5">
             <div

@@ -1,56 +1,55 @@
 use cfg_if::cfg_if;
-use supermailer::api;
 // boilerplate to run in different modes
 cfg_if! {
     if #[cfg(feature = "ssr")] {
         use aws_config::BehaviorVersion;
         use axum::{
             body::Body as AxumBody,
-            extract::{Path, State, RawQuery},
-            http::{header::HeaderMap, Request},
+            extract::{Path, State},
+            http::Request,
             response::{IntoResponse, Response},
             routing::get,
             Router,
         };
         use dotenvy::dotenv;
-        use leptos::*;
+        use leptos::{
+            config::get_configuration, prelude::provide_context,
+        };
         use leptos_axum::{generate_route_list_with_exclusions, handle_server_fns_with_context, LeptosRoutes};
         use std::env;
         use supermailer::state::{AppState, MailConfig};
-        use supermailer::{ui::*, fileserv::file_and_error_handler};
-        use api::{list_emails_api, get_email_html};
+        use supermailer::{ui::*};
+        use supermailer::api::{list_emails_api, get_email_html_api};
 
         async fn server_fn_handler(
             State(app_state): State<AppState>,
             path: Path<String>,
-            headers: HeaderMap,
-            raw_query: RawQuery,
             request: Request<AxumBody>
         ) -> impl IntoResponse {
 
             println!("{:?}", path);
 
-            handle_server_fns_with_context(path, headers, raw_query, move || {
+            handle_server_fns_with_context(move || {
                 // provide_context(cx, auth_session.clone());
                 provide_context(app_state.clone());
             }, request).await
         }
 
-
         async fn leptos_routes_handler(
-            State(app_state): State<AppState>,
+            state: State<AppState>,
             req: Request<AxumBody>,
         ) -> Response {
+            let State(app_state) = state.clone();
+            let leptos_options = state.leptos_options.clone();
             let handler = leptos_axum::render_route_with_context(
-                app_state.leptos_options.clone(),
                 app_state.routes.clone(),
                 move || {
                     // provide_context(auth_session.clone());
                     provide_context(app_state.clone());
                 },
-                Ui,
+                move || shell(leptos_options.clone()),
             );
-            handler(req).await.into_response()
+            handler(state, req).await.into_response()
         }
 
         #[tokio::main]
@@ -66,7 +65,7 @@ cfg_if! {
             let user_db = env::var("USER_DB").expect("USER_DB not set");
             // let aws_profile_name = env::var("AWS_PROFILE").expect("AWS_PROFILE not set");
 
-            let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+            let aws_config = aws_config::defaults(BehaviorVersion::v2025_01_17())
                 // .profile_name(aws_profile_name)
                 .load()
                 .await;
@@ -76,7 +75,7 @@ cfg_if! {
             // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>
             // Alternately a file can be specified such as Some("Cargo.toml")
             // The file would need to be included with the executable when moved to deployment
-            let conf = get_configuration(None).await.unwrap();
+            let conf = get_configuration(None).unwrap();
             let leptos_options = conf.leptos_options;
             // We don't use an address for the lambda function
             #[allow(unused_variables)]
@@ -98,7 +97,7 @@ cfg_if! {
 
             let api_route = Router::new()
                 .route("/:email", get(list_emails_api))
-                .route("/email/:id", get(get_email_html))
+                .route("/email/:id", get(get_email_html_api))
                 .with_state(state.clone());
 
             // build our application with a route
@@ -106,15 +105,16 @@ cfg_if! {
                 .nest("/api", api_route)
                 .route("/api_fn/*fn_name", get(server_fn_handler).post(server_fn_handler))
                 .leptos_routes_with_handler(routes, get(leptos_routes_handler))
-                .fallback(file_and_error_handler)
+                .fallback(leptos_axum::file_and_error_handler::<AppState, _>(shell))
                 .with_state(state);
 
             // In development, we use the Hyper server
             #[cfg(debug_assertions)]
             {
                 log::info!("listening on http://{}", &addr);
-                axum::Server::bind(&addr)
-                    .serve(app.into_make_service())
+                let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+                // logging::log!("listening on http://{}", &addr);
+                axum::serve(listener, app.into_make_service())
                     .await
                     .unwrap();
             }

@@ -75,7 +75,7 @@ pub fn MailPage() -> impl IntoView {
         <div class="bg-black">
             <ProgressNav progress=count />
             <div class="flex items-center text-white">
-                <div class="flex flex-col flex-grow py-3 ml-5 h-screen border-white shrink-0 w-[600px] border-x">
+                <div class="flex flex-col flex-grow py-3 sm:mx-5 h-screen border-white w-full sm:w-[600px] border-x">
                     <div class="flex flex-col gap-y-3 px-3">
                         <Input />
                         // <input
@@ -133,7 +133,7 @@ pub fn MailPage() -> impl IntoView {
                     // </select>
                     </div>
                     <div class="relative my-1">
-                        <div class="absolute left-0 -translate-x-1/2">
+                        <div class="absolute left-8 sm:left-0 -translate-x-1/2">
                             <Suspense fallback=move || {
                                 view! { <Badge>...</Badge> }
                             }>
@@ -150,42 +150,40 @@ pub fn MailPage() -> impl IntoView {
                                 }}
                             </Suspense>
                         </div>
-                        <div class="absolute right-0 translate-x-1/2">
+                        <div class="absolute right-8 sm:right-0 translate-x-1/2">
                             <Switch />
                         </div>
                         <hr class="mt-2.5 w-full border-zinc-800 box-border" />
                     </div>
-                    <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3 w-full">
-                        <Transition fallback=move || {
-                            view! { <p>"Loading..."</p> }
-                        }>
-                            {move || match mails.get() {
-                                None => view! { <p>"No Data"</p> }.into_any(),
-                                Some(data) => {
-                                    match data {
-                                        Ok(api) => {
-                                            view! {
-                                                <div>
-                                                    <For
-                                                        // a function that returns the items we're iterating over; a signal is fine
-                                                        each=move || api.data.clone()
-                                                        // a unique key for each item
-                                                        key=|mail| mail.sk
-                                                        // renders each item to a view
-                                                        children=move |mail| {
-                                                            view! { <Card mail=mail /> }
-                                                        }
-                                                    />
-                                                </div>
-                                            }
-                                                .into_any()
+                    <Transition fallback=move || {
+                        view! { <p>"Loading..."</p> }
+                    }>
+                        {move || match mails.get() {
+                            None => view! { <p>"No Data"</p> }.into_any(),
+                            Some(data) => {
+                                match data {
+                                    Ok(api) => {
+                                        view! {
+                                            <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3">
+                                                <For
+                                                    // a function that returns the items we're iterating over; a signal is fine
+                                                    each=move || api.data.clone()
+                                                    // a unique key for each item
+                                                    key=|mail| mail.sk
+                                                    // renders each item to a view
+                                                    children=move |mail| {
+                                                        view! { <Card mail=mail /> }
+                                                    }
+                                                />
+                                            </div>
                                         }
-                                        Err(e) => view! { <p>{e.to_string()}</p> }.into_any(),
+                                            .into_any()
                                     }
+                                    Err(e) => view! { <p>{e.to_string()}</p> }.into_any(),
                                 }
-                            }}
-                        </Transition>
-                    </div>
+                            }
+                        }}
+                    </Transition>
                 </div>
                 <div class="hidden flex-col flex-grow py-6 px-8 h-screen sm:flex">
                     <h1 class="text-2xl font-semibold">Teset Smith</h1>
@@ -222,10 +220,10 @@ fn ProgressNav(progress: ReadSignal<f64>) -> impl IntoView {
 #[component]
 fn Card(mail: Mail) -> impl IntoView {
     view! {
-        <div class="flex flex-col gap-y-1.5 p-6 rounded-lg border bg-zinc-950 border-zinc-800">
-            <h1 class="text-2xl font-semibold">{mail.from}</h1>
+        <div class="flex flex-col gap-y-1.5 p-5 sm:p-6 rounded-lg border bg-zinc-950 border-zinc-800">
+            <h1 class="text-lg sm:text-2xl font-semibold line-clamp-2">{mail.from}</h1>
             <p>{mail.subject}</p>
-            <p class="overflow-y-hidden text-base text-zinc-400 h-[2lh] text-ellipsis line-clamp-2">
+            <p class="overflow-y-hidden text-sm sm:text-base text-zinc-400 h-[3lh] sm:h-[2lh] text-ellipsis line-clamp-3 sm:line-clamp-2">
                 {mail.first_sentence}
             </p>
             <hr class="my-2.5 w-full border-zinc-800 box-border" />

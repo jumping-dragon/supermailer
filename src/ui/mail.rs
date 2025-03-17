@@ -77,7 +77,7 @@ pub fn MailPage() -> impl IntoView {
             <div class="flex items-center text-white">
                 <div class="flex flex-col flex-grow py-3 sm:mx-5 h-screen border-white w-full sm:w-[600px] border-x">
                     <div class="flex flex-col gap-y-3 px-3">
-                        <Input />
+                        // <Input />
                         // <input
                         // type="range"
                         // max="100"
@@ -87,19 +87,22 @@ pub fn MailPage() -> impl IntoView {
                         // }
                         // />
                         <Suspense fallback=move || {
-                            view! { <p>Loading...</p> }
+                            view! { <Input loading=true /> }
                         }>
                             {move || match users.get() {
-                                None => view! { <p>"Loading..."</p> }.into_any(),
+                                None => view! { <Input loading=true /> }.into_any(),
                                 Some(data) => {
                                     match data {
                                         Ok(api) => {
                                             view! {
-                                                <select on:change=move |ev| {
-                                                    let new_value = event_target_value(&ev);
-                                                    logging::log!("{}", &new_value);
-                                                    set_email.set(Some(new_value.parse::<String>().unwrap()));
-                                                }>
+                                                <select
+                                                    class="p-3 sm:p-4 border rounded-md border-zinc-800 bg-zinc-950 ring-offset-zinc-950"
+                                                    on:change=move |ev| {
+                                                        let new_value = event_target_value(&ev);
+                                                        logging::log!("{}", &new_value);
+                                                        set_email.set(Some(new_value.parse::<String>().unwrap()));
+                                                    }
+                                                >
                                                     <For
                                                         // a function that returns the items we're iterating over; a signal is fine
                                                         each=move || api.data.clone()

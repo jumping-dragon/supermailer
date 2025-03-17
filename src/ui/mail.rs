@@ -135,8 +135,8 @@ pub fn MailPage() -> impl IntoView {
                         </Suspense>
                     // </select>
                     </div>
-                    <div class="relative my-1">
-                        <div class="absolute left-8 sm:left-0 -translate-x-1/2">
+                    <div class="bg-transparent relative min-h-8 flex items-center z-10 backdrop-blur-sm">
+                        <div class="flex absolute left-4 sm:-left-4">
                             <Suspense fallback=move || {
                                 view! { <Badge>...</Badge> }
                             }>
@@ -153,13 +153,13 @@ pub fn MailPage() -> impl IntoView {
                                 }}
                             </Suspense>
                         </div>
-                        <div class="absolute right-8 sm:right-0 translate-x-1/2">
+                        <div class="flex absolute right-4 sm:right-0 sm:translate-x-1/2">
                             <Switch />
                         </div>
-                        <hr class="mt-2.5 w-full border-zinc-800 box-border" />
+                        <hr class="w-full border-zinc-800 box-border pt-1" />
                     </div>
                     <Transition fallback=move || {
-                        view! { <p>"Loading..."</p> }
+                        view! { <div class="px-3 py-4 -mt-4 z-0"><CardLoading /></div> }
                     }>
                         {move || match mails.get() {
                             None => view! { <p>"No Data"</p> }.into_any(),
@@ -167,7 +167,7 @@ pub fn MailPage() -> impl IntoView {
                                 match data {
                                     Ok(api) => {
                                         view! {
-                                            <div class="flex overflow-y-auto flex-col gap-y-3 px-3 pt-3">
+                                            <div class="flex overflow-y-auto flex-col gap-y-3 px-3 py-4 -mt-4 z-0">
                                                 <For
                                                     // a function that returns the items we're iterating over; a signal is fine
                                                     each=move || api.data.clone()

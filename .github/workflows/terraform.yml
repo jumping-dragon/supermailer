@@ -70,7 +70,10 @@ jobs:
       run: cargo binstall cargo-lambda -y
 
     - name: Setup Cargo Leptos
-      run: cargo install --locked cargo-leptos
+      uses: taiki-e/cache-cargo-install-action@v2
+      # run: cargo install --locked cargo-leptos
+      with:
+        tool: cargo-leptos
     
     - name: Build Release
       run: cargo leptos build --release

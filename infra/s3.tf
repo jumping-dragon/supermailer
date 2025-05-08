@@ -24,7 +24,7 @@ resource "aws_s3_object" "codebase" {
         bucket = aws_s3_bucket.bucket.id
         key          = each.key
         content_type     = lookup(local.content_types, element(split(".", each.key), length(split(".", each.key)) - 1), "text/plain")
-        content_encoding = "utf-8"
+        # content_encoding = "utf-8"
 
         # The template_files module guarantees that only one of these two attributes
         # will be set for each file, depending on whether it is an in-memory template
